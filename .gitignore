@@ -6,4 +6,4 @@ desktop.ini
 node_modules/
 *.log
 dist/
-.qoder.site
+*.qoder.site

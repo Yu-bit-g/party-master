@@ -2,7 +2,11 @@
 
 一个打开就能玩的线上派对小游戏合集：猜拳对战、疯狂骰子、真心话大冒险。纯前端单页应用，无需安装、无需注册。
 
-在线试玩：<https://yu-bit-g.github.io/party-master/>
+在线试玩（Qoder Sites）：<https://party-master-ejzm6nqoes7.qoder.zone>
+
+GitHub Pages 镜像：<https://yu-bit-g.github.io/party-master/>
+
+> 本作品参加 2026 Qoder 高校创造力大赛（LifeHack 生活娱乐赛道），投稿材料见 [`submission/`](submission/)。
 
 ## 功能
 
