@@ -25,9 +25,23 @@
     };
   </script>
   <style>
+    :root {
+      --site-bg: #FFF9EC;
+      --site-fg: #2B2B2B;
+      --site-accent: #FFD23F;
+      --site-on-accent: #2B2B2B;
+      --site-surface: #FFF9EC;
+      --site-muted: rgba(43, 43, 43, .55);
+      --site-border: #1F1F1F;
+      --site-font: system-ui, -apple-system, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      --site-radius: 2rem;
+      --site-space: 1;
+      --site-type: 1;
+      --site-motion: 1;
+    }
     /* ---------- 基础 ---------- */
     html { scroll-behavior: smooth; }
-    body { background-color: #FFF9EC; color: #2B2B2B; }
+    body.site-root { background-color: var(--site-bg); color: var(--site-fg); font-family: var(--site-font); }
 
     .dot-grid {
       background-image: radial-gradient(rgba(43, 43, 43, .07) 1.1px, transparent 1.1px);
@@ -91,13 +105,13 @@
       font-weight: 800;
       letter-spacing: .01em;
       white-space: nowrap;
-      color: rgba(43, 43, 43, .55);
-      transition: background-color .18s ease, color .18s ease, box-shadow .18s ease;
+      color: var(--site-muted);
+      transition: background-color calc(180ms * var(--site-motion, 1)) ease, color calc(180ms * var(--site-motion, 1)) ease, box-shadow calc(180ms * var(--site-motion, 1)) ease;
     }
-    .tab-btn:hover { background: rgba(255, 210, 63, .26); color: #2B2B2B; }
+    .tab-btn:hover { background: rgba(255, 210, 63, .26); color: var(--site-fg); }
     .tab-btn[aria-selected="true"] {
-      background: #2B2B2B;
-      color: #FFD23F;
+      background: var(--site-fg);
+      color: var(--site-accent);
       box-shadow: 0 6px 16px -8px rgba(43, 43, 43, .65);
     }
     .tab-btn:focus-visible { outline: 2px solid #2B2B2B; outline-offset: 2px; }
@@ -114,11 +128,11 @@
       border-radius: 9999px;
       border: 2px solid #1F1F1F;
       background: linear-gradient(180deg, #FFE066 0%, #FFC700 100%);
-      color: #2B2B2B;
+      color: var(--site-on-accent);
       font-weight: 900;
       letter-spacing: .01em;
       box-shadow: 0 5px 0 #1F1F1F, 0 18px 32px -20px rgba(0, 0, 0, .75);
-      transition: transform .12s ease, box-shadow .12s ease, filter .12s ease;
+      transition: transform calc(120ms * var(--site-motion, 1)) ease, box-shadow calc(120ms * var(--site-motion, 1)) ease, filter calc(120ms * var(--site-motion, 1)) ease;
     }
     .btn-pop:hover {
       transform: translateY(-2px);
@@ -844,11 +858,11 @@
     }
     body:has(.truth-dialog[open]) { overflow: hidden; }
     .truth-modal-card {
-      --tm-bg: #FFF9EC;
-      --tm-text: #2B2B2B;
-      --tm-muted: rgba(43, 43, 43, .58);
-      --tm-border: #1F1F1F;
-      --tm-accent: #FFD23F;
+      --tm-bg: var(--site-surface);
+      --tm-text: var(--site-fg);
+      --tm-muted: var(--site-muted);
+      --tm-border: var(--site-border);
+      --tm-accent: var(--site-accent);
       --tm-soft: rgba(43, 43, 43, .07);
       position: relative;
       width: 100%;
@@ -856,13 +870,13 @@
       overflow-x: hidden;
       overflow-y: auto;
       overscroll-behavior: contain;
-      padding: 2.15rem 2rem 2rem;
+      padding: calc(2.15rem * var(--site-space, 1)) calc(2rem * var(--site-space, 1)) calc(2rem * var(--site-space, 1));
       border: 2px solid var(--tm-border);
-      border-radius: 2rem;
+      border-radius: var(--site-radius);
       background: var(--tm-bg);
       color: var(--tm-text);
       box-shadow: 0 8px 0 var(--tm-border), 0 40px 100px -30px rgba(0, 0, 0, .8);
-      animation: truth-modal-pop .32s cubic-bezier(.22, .9, .28, 1.16) both;
+      animation: truth-modal-pop calc(320ms * var(--site-motion, 1)) cubic-bezier(.22, .9, .28, 1.16) both;
     }
     .truth-modal-card::before {
       content: "";
@@ -934,7 +948,7 @@
     .truth-modal-title {
       margin-top: .3rem;
       color: var(--tm-text);
-      font-size: clamp(1.9rem, 5vw, 2.4rem);
+      font-size: clamp(calc(1.9rem * var(--site-type, 1)), 5vw, calc(2.4rem * var(--site-type, 1)));
       font-weight: 900;
       line-height: 1.15;
       letter-spacing: -.02em;
@@ -992,7 +1006,7 @@
   </style>
 </head>
 
-<body class="min-h-screen bg-cream font-sans text-ink antialiased">
+<body class="site-root min-h-screen bg-cream font-sans text-ink antialiased">
   <!-- 背景装饰 -->
   <div class="pointer-events-none fixed inset-0 -z-10 overflow-hidden" aria-hidden="true">
     <div class="dot-grid absolute inset-0"></div>
