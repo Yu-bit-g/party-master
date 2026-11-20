@@ -1,0 +1,2934 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>派对大玩家 · Party Master</title>
+  <meta name="description" content="派对大玩家 —— 猜拳、骰子、真心话大冒险，年轻人的线上派对小游戏合集。" />
+  <meta name="theme-color" content="#FFD23F" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23FFD23F'/%3E%3Cpath d='M32 12l6.2 12.6 13.8 2-10 9.8 2.4 13.8L32 44l-12.4 6.2 2.4-13.8-10-9.8 13.8-2z' fill='%232B2B2B'/%3E%3C/svg%3E" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            sunny: { DEFAULT: '#FFD23F', deep: '#FFC300', soft: '#FFF3C4' },
+            ink: { DEFAULT: '#2B2B2B', soft: '#3B3B3B' },
+            cream: '#FFF9EC'
+          },
+          fontFamily: {
+            sans: ['system-ui', '-apple-system', 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'sans-serif']
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    /* ---------- 基础 ---------- */
+    html { scroll-behavior: smooth; }
+    body { background-color: #FFF9EC; color: #2B2B2B; }
+
+    .dot-grid {
+      background-image: radial-gradient(rgba(43, 43, 43, .07) 1.1px, transparent 1.1px);
+      background-size: 22px 22px;
+    }
+    .dot-grid--dark {
+      background-image: radial-gradient(rgba(255, 255, 255, .13) 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+    .bg-particles,
+    .bg-notes,
+    .bg-dust { position: absolute; inset: 0; }
+    .bg-note,
+    .bg-particle {
+      position: absolute;
+      top: -8vh;
+      left: var(--x, 50%);
+      opacity: 0;
+      animation: bg-drift var(--dur, 26s) linear var(--delay, 0s) infinite;
+    }
+    .bg-note {
+      color: rgba(43, 43, 43, .16);
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: var(--size, 16px);
+      font-weight: 700;
+      line-height: 1;
+      text-shadow: 0 1px 0 rgba(255, 255, 255, .55);
+    }
+    .bg-note:nth-child(3n) { color: rgba(255, 193, 0, .34); }
+    .bg-note:nth-child(5n) { color: rgba(43, 43, 43, .1); }
+    .bg-particle {
+      width: var(--size, 5px);
+      height: var(--size, 5px);
+      border-radius: 9999px;
+      background: rgba(43, 43, 43, .14);
+    }
+    .bg-particle:nth-child(4n) { background: rgba(255, 193, 0, .34); }
+    @keyframes bg-drift {
+      0% { transform: translate3d(0, 0, 0) rotate(0deg); opacity: 0; }
+      10% { opacity: var(--opacity, .14); }
+      50% { transform: translate3d(var(--drift, 20px), 55vh, 0) rotate(140deg); opacity: var(--opacity, .14); }
+      90% { opacity: var(--opacity, .14); }
+      100% { transform: translate3d(calc(var(--drift, 20px) * -1), 112vh, 0) rotate(300deg); opacity: 0; }
+    }
+    @media (max-width: 639px) {
+      .bg-note:nth-child(n + 7),
+      .bg-particle:nth-child(n + 5) { display: none; }
+    }
+    .is-hidden { display: none !important; }
+
+    /* ---------- 顶部标签 ---------- */
+    .tab-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: .3rem;
+      min-width: 0;
+      padding: .5rem .45rem;
+      border-radius: 9999px;
+      font-size: .75rem;
+      font-weight: 800;
+      letter-spacing: .01em;
+      white-space: nowrap;
+      color: rgba(43, 43, 43, .55);
+      transition: background-color .18s ease, color .18s ease, box-shadow .18s ease;
+    }
+    .tab-btn:hover { background: rgba(255, 210, 63, .26); color: #2B2B2B; }
+    .tab-btn[aria-selected="true"] {
+      background: #2B2B2B;
+      color: #FFD23F;
+      box-shadow: 0 6px 16px -8px rgba(43, 43, 43, .65);
+    }
+    .tab-btn:focus-visible { outline: 2px solid #2B2B2B; outline-offset: 2px; }
+    @media (min-width: 640px) {
+      .tab-btn { gap: .4rem; padding: .55rem 1.25rem; font-size: .875rem; }
+    }
+
+    /* ---------- 按钮 ---------- */
+    .btn-pop {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: .5rem;
+      border-radius: 9999px;
+      border: 2px solid #1F1F1F;
+      background: linear-gradient(180deg, #FFE066 0%, #FFC700 100%);
+      color: #2B2B2B;
+      font-weight: 900;
+      letter-spacing: .01em;
+      box-shadow: 0 5px 0 #1F1F1F, 0 18px 32px -20px rgba(0, 0, 0, .75);
+      transition: transform .12s ease, box-shadow .12s ease, filter .12s ease;
+    }
+    .btn-pop:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.03);
+      box-shadow: 0 7px 0 #1F1F1F, 0 22px 36px -20px rgba(0, 0, 0, .75);
+    }
+    .btn-pop:active {
+      transform: translateY(3px);
+      box-shadow: 0 2px 0 #1F1F1F, 0 10px 20px -14px rgba(0, 0, 0, .6);
+    }
+    .btn-pop:focus-visible { outline: 3px solid rgba(255, 210, 63, .55); outline-offset: 4px; }
+    .btn-pop:disabled,
+    .btn-pop:disabled:hover {
+      opacity: .38;
+      cursor: not-allowed;
+      transform: none;
+      filter: none;
+      box-shadow: 0 3px 0 #1F1F1F;
+    }
+
+    .btn-ghost {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: .4rem;
+      border-radius: 9999px;
+      border: 1.5px solid rgba(255, 255, 255, .2);
+      color: rgba(255, 255, 255, .72);
+      font-weight: 700;
+      transition: background-color .18s ease, color .18s ease, border-color .18s ease;
+    }
+    .btn-ghost:hover {
+      background: rgba(255, 255, 255, .08);
+      border-color: rgba(255, 255, 255, .34);
+      color: #fff;
+    }
+    .btn-ghost:focus-visible { outline: 3px solid rgba(255, 210, 63, .5); outline-offset: 3px; }
+
+    .btn-disabled {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: .5rem;
+      border-radius: 9999px;
+      border: 2px dashed rgba(43, 43, 43, .22);
+      background: #F6F1E4;
+      color: rgba(43, 43, 43, .42);
+      font-weight: 800;
+      cursor: not-allowed;
+    }
+
+    /* ---------- 对战 ---------- */
+    .choice-slot {
+      position: relative;
+      display: grid;
+      place-items: center;
+      width: 3.4rem;
+      height: 3.4rem;
+      border-radius: 1rem;
+      border: 1px solid rgba(255, 255, 255, .12);
+      background: rgba(255, 255, 255, .05);
+      font-size: 1.55rem;
+      font-weight: 900;
+      line-height: 1;
+      transition: transform .2s ease, background-color .2s ease, border-color .2s ease;
+    }
+    .choice-slot.is-dice { font-size: 1.05rem; letter-spacing: .02em; }
+    .choice-slot.is-dice-many { font-size: .72rem; letter-spacing: 0; }
+    .choice-slot.is-reveal,
+    .choice-slot.is-dice-landed {
+      border-color: rgba(255, 210, 63, .44);
+      background: rgba(255, 210, 63, .13);
+    }
+    .choice-slot.is-reveal { animation: choice-pop .35s cubic-bezier(.34, 1.56, .64, 1); }
+    .choice-slot.is-reveal.is-gesture-reveal {
+      font-size: 2.2rem;
+      animation: rps-gesture-bounce .62s cubic-bezier(.22, .9, .3, 1) both;
+    }
+    .choice-slot.is-gesture-reveal::before {
+      content: "";
+      position: absolute;
+      inset: -12px;
+      border-radius: 1.4rem;
+      background: radial-gradient(circle, rgba(255, 210, 63, .3), rgba(255, 210, 63, 0) 68%);
+      opacity: 0;
+      animation: rps-glow .6s ease-out both;
+      pointer-events: none;
+    }
+    .choice-slot.is-gesture-reveal::after {
+      content: "";
+      position: absolute;
+      inset: -9px;
+      border-radius: 1.35rem;
+      border: 2px solid rgba(255, 210, 63, .7);
+      opacity: 0;
+      animation: rps-burst .58s ease-out both;
+      pointer-events: none;
+    }
+    @keyframes choice-pop { from { transform: scale(.7); } to { transform: scale(1); } }
+    @keyframes rps-gesture-bounce {
+      0% { transform: translateY(4px) scale(.38) rotate(-16deg); opacity: .25; }
+      38% { transform: translateY(-11px) scale(1.3) rotate(7deg); opacity: 1; }
+      58% { transform: translateY(0) scale(.92) rotate(-4deg); }
+      76% { transform: translateY(-4px) scale(1.08) rotate(2deg); }
+      100% { transform: translateY(0) scale(1) rotate(0); }
+    }
+    @keyframes rps-glow {
+      0% { opacity: 0; transform: scale(.6); }
+      30% { opacity: 1; }
+      100% { opacity: 0; transform: scale(1.35); }
+    }
+    @keyframes rps-burst {
+      0% { opacity: 0; transform: scale(.55) rotate(-8deg); }
+      28% { opacity: 1; }
+      100% { opacity: 0; transform: scale(1.35) rotate(8deg); }
+    }
+
+    .choice-slot.is-tumbling {
+      z-index: 2;
+      border-color: rgba(255, 210, 63, .85);
+      background: rgba(255, 210, 63, .16);
+      box-shadow: 0 0 0 5px rgba(255, 210, 63, .08), 0 0 30px rgba(255, 210, 63, .32);
+      animation: dice-tumble .78s cubic-bezier(.2, .8, .2, 1) both;
+    }
+    .choice-slot.is-tumbling::after {
+      content: "";
+      position: absolute;
+      inset: -8px;
+      border-radius: 1.3rem;
+      border: 2px solid rgba(255, 210, 63, .74);
+      opacity: 0;
+      animation: dice-ring .78s ease-out both;
+      pointer-events: none;
+    }
+    @keyframes dice-tumble {
+      0% { transform: perspective(360px) rotateX(0deg) rotateY(0deg) rotateZ(0deg) scale(1); }
+      18% { transform: perspective(360px) rotateX(120deg) rotateY(-70deg) rotateZ(12deg) scale(1.12); }
+      38% { transform: perspective(360px) rotateX(250deg) rotateY(150deg) rotateZ(-10deg) scale(.94); }
+      62% { transform: perspective(360px) rotateX(390deg) rotateY(80deg) rotateZ(8deg) scale(1.08); }
+      82% { transform: perspective(360px) rotateX(350deg) rotateY(-20deg) rotateZ(-3deg) scale(.98); }
+      100% { transform: perspective(360px) rotateX(360deg) rotateY(0deg) rotateZ(0deg) scale(1); }
+    }
+    @keyframes dice-ring {
+      0% { opacity: 0; transform: scale(.62); }
+      18% { opacity: 1; }
+      100% { opacity: 0; transform: scale(1.48); }
+    }
+
+    .battle-orb {
+      display: grid;
+      place-items: center;
+      width: 4.4rem;
+      height: 4.4rem;
+      border-radius: 9999px;
+      border: 2px solid rgba(255, 210, 63, .45);
+      background: radial-gradient(circle, rgba(255, 210, 63, .18), rgba(255, 210, 63, .03) 70%);
+      font-size: 1.8rem;
+      font-weight: 900;
+      line-height: 1;
+      color: #FFD23F;
+      box-shadow: 0 0 28px rgba(255, 210, 63, .16), inset 0 0 18px rgba(255, 210, 63, .08);
+    }
+    .battle-orb.is-vs { font-size: 1rem; letter-spacing: .04em; }
+    .battle-orb.is-win {
+      background: #FFD23F;
+      border-color: #FFD23F;
+      color: #2B2B2B;
+      box-shadow: 0 0 32px rgba(255, 210, 63, .45);
+    }
+    .battle-orb.is-pop { animation: orb-pop .38s cubic-bezier(.34, 1.56, .64, 1); }
+    @keyframes orb-pop { from { transform: scale(.72); opacity: .5; } to { transform: scale(1); opacity: 1; } }
+
+    .rps-btn {
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+      align-items: center;
+      gap: .15rem;
+      padding: .6rem .5rem;
+      border-radius: 1rem;
+      border: 1.5px solid rgba(255, 255, 255, .14);
+      background: rgba(255, 255, 255, .05);
+      color: rgba(255, 255, 255, .72);
+      font-size: .7rem;
+      font-weight: 700;
+      transition: transform .15s ease, background-color .15s ease, border-color .15s ease, color .15s ease;
+    }
+    .rps-btn > span:first-child { font-size: 1.4rem; line-height: 1.1; }
+    .rps-btn:hover:not(:disabled) {
+      border-color: rgba(255, 210, 63, .45);
+      background: rgba(255, 210, 63, .14);
+      color: #fff;
+      transform: translateY(-1px);
+    }
+    .rps-btn.is-picked {
+      border-color: #FFD23F;
+      background: rgba(255, 210, 63, .18);
+      color: #FFD23F;
+    }
+    .rps-btn:disabled { opacity: .35; cursor: not-allowed; }
+    .rps-btn:focus-visible { outline: 2px solid rgba(255, 210, 63, .6); outline-offset: 2px; }
+
+    .dice-count {
+      display: flex;
+      gap: .35rem;
+      padding: .25rem;
+      border-radius: 9999px;
+      border: 1px solid rgba(255, 255, 255, .12);
+      background: rgba(255, 255, 255, .05);
+    }
+    .dice-count-btn {
+      flex: 1;
+      padding: .42rem .5rem;
+      border-radius: 9999px;
+      color: rgba(255, 255, 255, .55);
+      font-size: .72rem;
+      font-weight: 800;
+      transition: background-color .15s ease, color .15s ease, opacity .15s ease;
+    }
+    .dice-count-btn:hover:not(:disabled) { color: #fff; background: rgba(255, 255, 255, .08); }
+    .dice-count-btn.is-active { background: #FFD23F; color: #2B2B2B; }
+    .dice-count-btn:disabled { cursor: not-allowed; }
+    .dice-count-btn:disabled:not(.is-active) { opacity: .4; }
+    .dice-count-btn:focus-visible { outline: 2px solid rgba(255, 210, 63, .6); outline-offset: 2px; }
+
+    /* ---------- 匹配成功 VS 入场 ---------- */
+    .vs-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 75;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      visibility: hidden;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .vs-overlay.is-active { visibility: visible; opacity: 1; }
+    .vs-overlay.is-out { opacity: 0; transition: opacity .3s ease; }
+    .vs-side {
+      position: absolute;
+      top: -6%;
+      bottom: -6%;
+      width: 56%;
+      overflow: hidden;
+    }
+    .vs-side--me {
+      left: 0;
+      clip-path: polygon(0 0, 100% 0, 82% 100%, 0 100%);
+      background: linear-gradient(135deg, #FFE680 0%, #FFD23F 46%, #FFC300 100%);
+      color: #2B2B2B;
+    }
+    .vs-side--opp {
+      right: 0;
+      clip-path: polygon(18% 0, 100% 0, 100% 100%, 0 100%);
+      background: linear-gradient(135deg, #2B2B2B 0%, #1C1C1C 60%, #101010 100%);
+      color: #FFF9EC;
+    }
+    .vs-side::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image: repeating-linear-gradient(115deg, transparent 0 28px, rgba(255, 255, 255, .16) 28px 30px);
+      opacity: .55;
+    }
+    .vs-side--opp::before {
+      background-image: repeating-linear-gradient(115deg, transparent 0 28px, rgba(255, 210, 63, .1) 28px 30px);
+    }
+    .vs-fighter {
+      position: absolute;
+      top: 50%;
+      z-index: 3;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: .7rem;
+      width: 48%;
+      transform: translateY(-50%);
+      text-align: center;
+    }
+    .vs-side--me .vs-fighter { left: 13%; }
+    .vs-side--opp .vs-fighter { right: 13%; }
+    .vs-fighter-avatar {
+      display: grid;
+      place-items: center;
+      width: clamp(4.2rem, 12vw, 7rem);
+      height: clamp(4.2rem, 12vw, 7rem);
+      border-radius: 1.4rem;
+      border: 3px solid #1F1F1F;
+      background: rgba(255, 255, 255, .62);
+      font-size: clamp(2.1rem, 6.4vw, 3.6rem);
+      line-height: 1;
+      box-shadow: 0 7px 0 #1F1F1F;
+      transform: rotate(-6deg);
+    }
+    .vs-side--opp .vs-fighter-avatar {
+      border-color: rgba(255, 210, 63, .85);
+      background: rgba(255, 255, 255, .07);
+      box-shadow: 0 7px 0 rgba(255, 210, 63, .38);
+      transform: rotate(6deg);
+    }
+    .vs-fighter-tag {
+      padding: .16rem .55rem;
+      border-radius: 9999px;
+      background: rgba(43, 43, 43, .12);
+      color: rgba(43, 43, 43, .72);
+      font-size: clamp(.5rem, 1.4vw, .65rem);
+      font-weight: 900;
+      letter-spacing: .2em;
+    }
+    .vs-side--opp .vs-fighter-tag {
+      background: rgba(255, 210, 63, .16);
+      color: #FFD23F;
+    }
+    .vs-fighter-name {
+      width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: clamp(.8rem, 2.4vw, 1.15rem);
+      font-weight: 900;
+    }
+    .vs-center {
+      position: relative;
+      z-index: 4;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: .1rem;
+      text-align: center;
+    }
+    .vs-center::before {
+      content: "";
+      position: absolute;
+      z-index: -1;
+      width: clamp(10rem, 34vw, 20rem);
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 210, 63, .46), rgba(255, 210, 63, 0) 68%);
+    }
+    .vs-kicker {
+      padding: .22rem .6rem;
+      border-radius: 9999px;
+      background: #FFD23F;
+      color: #1F1F1F;
+      font-size: clamp(.48rem, 1.4vw, .66rem);
+      font-weight: 900;
+      letter-spacing: .2em;
+      box-shadow: 0 3px 0 rgba(0, 0, 0, .32);
+    }
+    .vs-word {
+      display: block;
+      color: #FFF9EC;
+      font-size: clamp(5.2rem, 21vw, 10.5rem);
+      font-weight: 900;
+      line-height: .84;
+      letter-spacing: -.08em;
+      -webkit-text-stroke: clamp(2px, .45vw, 4px) #1F1F1F;
+      text-shadow: 0 5px 0 #FFC300, 0 12px 0 rgba(0, 0, 0, .32), 0 0 54px rgba(255, 210, 63, .6);
+      transform: skewX(-6deg);
+    }
+    .vs-sub {
+      color: rgba(255, 249, 236, .92);
+      font-size: clamp(.62rem, 1.8vw, .82rem);
+      font-weight: 800;
+      letter-spacing: .32em;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, .7);
+    }
+    .vs-flash {
+      position: absolute;
+      inset: 0;
+      z-index: 6;
+      opacity: 0;
+      background: radial-gradient(circle at 50% 45%, #fff 0%, rgba(255, 243, 196, .8) 24%, rgba(255, 210, 63, 0) 62%);
+    }
+    .vs-streaks {
+      position: absolute;
+      inset: -20%;
+      z-index: 2;
+      opacity: 0;
+      background: repeating-linear-gradient(115deg, transparent 0 30px, rgba(255, 255, 255, .16) 30px 33px);
+      mix-blend-mode: overlay;
+    }
+    .vs-overlay.is-active .vs-side--me { animation: vs-slide-left .5s cubic-bezier(.16, 1, .3, 1) both; }
+    .vs-overlay.is-active .vs-side--opp { animation: vs-slide-right .5s cubic-bezier(.16, 1, .3, 1) both; }
+    .vs-overlay.is-active .vs-side--me .vs-fighter { animation: vs-fighter-left .52s cubic-bezier(.34, 1.56, .64, 1) .18s both; }
+    .vs-overlay.is-active .vs-side--opp .vs-fighter { animation: vs-fighter-right .52s cubic-bezier(.34, 1.56, .64, 1) .18s both; }
+    .vs-overlay.is-active .vs-center { animation: vs-center-slam .68s cubic-bezier(.18, .9, .25, 1.1) .1s both; }
+    .vs-overlay.is-active .vs-flash { animation: vs-flash .52s ease-out .12s both; }
+    .vs-overlay.is-active .vs-streaks { animation: vs-streaks .7s ease-out both; }
+    @keyframes vs-slide-left {
+      from { transform: translate3d(-103%, 0, 0) skewX(-4deg); }
+      to { transform: translate3d(0, 0, 0); }
+    }
+    @keyframes vs-slide-right {
+      from { transform: translate3d(103%, 0, 0) skewX(4deg); }
+      to { transform: translate3d(0, 0, 0); }
+    }
+    @keyframes vs-fighter-left {
+      from { opacity: 0; transform: translate3d(-22px, calc(-50% + 12px), 0) scale(.72); }
+      to { opacity: 1; transform: translate3d(0, -50%, 0) scale(1); }
+    }
+    @keyframes vs-fighter-right {
+      from { opacity: 0; transform: translate3d(22px, calc(-50% + 12px), 0) scale(.72); }
+      to { opacity: 1; transform: translate3d(0, -50%, 0) scale(1); }
+    }
+    @keyframes vs-center-slam {
+      0% { opacity: 0; transform: scale(2.3) rotate(-9deg); filter: blur(7px); }
+      52% { opacity: 1; transform: scale(.9) rotate(2deg); filter: blur(0); }
+      72% { transform: scale(1.06) rotate(-1deg); }
+      100% { opacity: 1; transform: scale(1) rotate(0); }
+    }
+    @keyframes vs-flash {
+      0%, 10% { opacity: 0; }
+      18% { opacity: .9; }
+      100% { opacity: 0; }
+    }
+    @keyframes vs-streaks {
+      0% { opacity: 0; transform: translateX(-12%) scale(1.15); }
+      20% { opacity: .6; }
+      100% { opacity: 0; transform: translateX(10%) scale(1); }
+    }
+    @media (max-width: 480px) {
+      .vs-side { width: 58%; }
+      .vs-side--me .vs-fighter { left: 9%; }
+      .vs-side--opp .vs-fighter { right: 9%; }
+      .vs-fighter { width: 52%; gap: .5rem; }
+      .vs-fighter-avatar {
+        width: 4rem;
+        height: 4rem;
+        border-width: 2px;
+        font-size: 2rem;
+        box-shadow: 0 5px 0 #1F1F1F;
+      }
+      .vs-side--opp .vs-fighter-avatar { box-shadow: 0 5px 0 rgba(255, 210, 63, .38); }
+      .vs-word { font-size: 5rem; }
+      .vs-center::before { width: 11rem; }
+    }
+
+    .star-toast {
+      position: fixed;
+      bottom: max(1.25rem, env(safe-area-inset-bottom, 1.25rem));
+      left: 50%;
+      z-index: 70;
+      max-width: calc(100vw - 2rem);
+      padding: .65rem 1.15rem;
+      border-radius: 9999px;
+      border: 2px solid #1F1F1F;
+      background: linear-gradient(180deg, #FFE066 0%, #FFC700 100%);
+      color: #2B2B2B;
+      font-size: .8rem;
+      font-weight: 900;
+      text-align: center;
+      box-shadow: 0 5px 0 #1F1F1F, 0 18px 34px -18px rgba(0, 0, 0, .8);
+      opacity: 0;
+      transform: translate(-50%, 10px);
+      pointer-events: none;
+      transition: opacity .25s ease, transform .25s ease;
+    }
+    .star-toast.is-visible { opacity: 1; transform: translate(-50%, 0); }
+
+    /* ---------- 动效 ---------- */
+    .tab-panel { animation: panel-in .3s cubic-bezier(.22, 1, .36, 1) both; }
+    @keyframes panel-in {
+      from { opacity: 0; transform: translateY(12px) scale(.995); }
+      to { opacity: 1; transform: none; }
+    }
+
+    .lobby-view { animation: lobby-in .32s cubic-bezier(.22, 1, .36, 1) both; }
+    @keyframes lobby-in {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: none; }
+    }
+
+    .floaty {
+      transform: rotate(var(--rot, 0deg));
+      animation: floaty 4.2s ease-in-out infinite;
+    }
+    @keyframes floaty {
+      0%, 100% { transform: translateY(0) rotate(var(--rot, 0deg)); }
+      50% { transform: translateY(-7px) rotate(var(--rot, 0deg)); }
+    }
+
+    /* ---------- 雷达 ---------- */
+    .radar {
+      position: relative;
+      width: 12rem;
+      height: 12rem;
+      margin-inline: auto;
+      border-radius: 9999px;
+      border: 1px solid rgba(255, 255, 255, .12);
+      background: radial-gradient(circle at 50% 50%, rgba(255, 210, 63, .14), rgba(255, 210, 63, .04) 55%, rgba(255, 210, 63, 0) 72%);
+      box-shadow: inset 0 0 42px rgba(255, 210, 63, .07);
+      overflow: hidden;
+    }
+    @media (min-width: 640px) {
+      .radar { width: 14rem; height: 14rem; }
+    }
+    .radar-ring {
+      position: absolute;
+      border-radius: 9999px;
+      border: 1px solid rgba(255, 255, 255, .08);
+    }
+    .radar-ring--1 { inset: 10%; }
+    .radar-ring--2 { inset: 22%; }
+    .radar-ring--3 { inset: 34%; }
+    .radar-cross-h {
+      position: absolute; left: 8%; right: 8%; top: 50%;
+      height: 1px; background: rgba(255, 255, 255, .06);
+    }
+    .radar-cross-v {
+      position: absolute; top: 8%; bottom: 8%; left: 50%;
+      width: 1px; background: rgba(255, 255, 255, .06);
+    }
+    .radar-sweep {
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: conic-gradient(
+        from 0deg,
+        rgba(255, 210, 63, .6) 0deg,
+        rgba(255, 210, 63, .14) 30deg,
+        rgba(255, 210, 63, 0) 92deg,
+        rgba(255, 210, 63, 0) 360deg
+      );
+      animation: radar-spin 2.8s linear infinite;
+    }
+    @keyframes radar-spin { to { transform: rotate(360deg); } }
+
+    .radar-core {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      z-index: 2;
+      display: grid;
+      place-items: center;
+      width: 3.4rem;
+      height: 3.4rem;
+      transform: translate(-50%, -50%);
+      border-radius: 9999px;
+      background: #FFD23F;
+      font-size: 1.45rem;
+      box-shadow: 0 0 0 6px rgba(255, 210, 63, .14), 0 0 34px rgba(255, 210, 63, .55);
+    }
+    .radar-core::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      border: 2px solid rgba(255, 210, 63, .65);
+      animation: radar-ping 2.4s cubic-bezier(0, 0, .2, 1) infinite;
+    }
+    @keyframes radar-ping {
+      0% { transform: scale(1); opacity: .75; }
+      80%, 100% { transform: scale(1.9); opacity: 0; }
+    }
+
+    .blip {
+      position: absolute;
+      z-index: 1;
+      width: 8px;
+      height: 8px;
+      border-radius: 9999px;
+      background: #FFD23F;
+      box-shadow: 0 0 12px rgba(255, 210, 63, .9);
+      animation: blip 3s ease-in-out infinite;
+    }
+    @keyframes blip {
+      0%, 100% { opacity: .25; transform: scale(.7); }
+      50% { opacity: 1; transform: scale(1); }
+    }
+
+    .dot-bounce {
+      display: inline-block;
+      width: 5px;
+      height: 5px;
+      border-radius: 9999px;
+      background: #FFD23F;
+      animation: dot-bounce 1.1s ease-in-out infinite;
+    }
+    @keyframes dot-bounce {
+      0%, 60%, 100% { transform: translateY(0); opacity: .45; }
+      30% { transform: translateY(-4px); opacity: 1; }
+    }
+
+    /* ---------- 真心话大冒险转盘 ---------- */
+    .wheel-rig {
+      position: relative;
+      width: min(78vw, 20rem);
+      aspect-ratio: 1;
+      margin-inline: auto;
+    }
+    .wheel-shell {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      padding: .55rem;
+      border-radius: 9999px;
+      border: 2px solid rgba(255, 255, 255, .16);
+      background: radial-gradient(circle at 32% 22%, #4A4A4A 0%, #252525 42%, #161616 100%);
+      box-shadow: 0 30px 60px -26px rgba(0, 0, 0, .95), inset 0 0 0 1px rgba(255, 255, 255, .08);
+    }
+    .wheel-shell::after {
+      content: "";
+      position: absolute;
+      inset: .55rem;
+      z-index: 3;
+      border-radius: 9999px;
+      pointer-events: none;
+      background: radial-gradient(circle at 30% 20%, rgba(255, 255, 255, .2), transparent 44%);
+    }
+    .truth-wheel {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      border-radius: 9999px;
+      background: conic-gradient(
+        #FFD23F 0deg 45deg,
+        #2B2B2B 45deg 90deg,
+        #FFF3C4 90deg 135deg,
+        #FF7A59 135deg 180deg,
+        #FFC300 180deg 225deg,
+        #3A3A3A 225deg 270deg,
+        #FFF9EC 270deg 315deg,
+        #FF9F1C 315deg 360deg
+      );
+      box-shadow: inset 0 0 0 3px rgba(43, 43, 43, .25), inset 0 0 36px rgba(43, 43, 43, .22);
+      transition: transform 5.2s cubic-bezier(.12, .72, .12, 1);
+      will-change: transform;
+    }
+    .wheel-labels { position: absolute; inset: 0; z-index: 2; }
+    .wheel-label {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      transform: rotate(var(--angle));
+    }
+    .wheel-tag {
+      position: absolute;
+      top: .72rem;
+      left: 50%;
+      display: inline-flex;
+      align-items: center;
+      gap: .12rem;
+      padding: .18rem .42rem;
+      border-radius: 9999px;
+      border: 1px solid rgba(43, 43, 43, .12);
+      font-size: clamp(.48rem, 1.8vw, .62rem);
+      font-weight: 900;
+      line-height: 1.25;
+      letter-spacing: .02em;
+      white-space: nowrap;
+      transform: translateX(-50%) rotate(var(--counter));
+      box-shadow: 0 3px 9px rgba(0, 0, 0, .16);
+    }
+    .wheel-tag--truth { background: rgba(255, 255, 255, .92); color: #2B2B2B; }
+    .wheel-tag--dare {
+      border-color: rgba(255, 210, 63, .3);
+      background: rgba(31, 31, 31, .9);
+      color: #FFD23F;
+    }
+    .wheel-pointer {
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      display: grid;
+      place-items: center;
+      pointer-events: none;
+    }
+    .wheel-needle {
+      position: absolute;
+      bottom: 50%;
+      left: 50%;
+      width: 1.05rem;
+      height: 32%;
+      transform: translateX(-50%);
+      filter: drop-shadow(0 4px 6px rgba(0, 0, 0, .35));
+    }
+    .wheel-hub {
+      position: relative;
+      z-index: 2;
+      display: grid;
+      place-items: center;
+      width: clamp(3.1rem, 12vw, 4rem);
+      height: clamp(3.1rem, 12vw, 4rem);
+      border-radius: 9999px;
+      border: 3px solid #FFD23F;
+      background: radial-gradient(circle at 35% 28%, #505050 0%, #202020 72%);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, .6), inset 0 0 0 4px rgba(255, 255, 255, .06);
+      font-size: clamp(1.3rem, 4.5vw, 1.7rem);
+    }
+    .wheel-hub::after {
+      content: "";
+      position: absolute;
+      inset: -7px;
+      border-radius: inherit;
+      border: 1px solid rgba(255, 210, 63, .2);
+    }
+    @media (min-width: 640px) {
+      .wheel-rig { width: 21rem; }
+    }
+    @media (min-width: 1024px) {
+      .wheel-rig { width: 21.5rem; }
+    }
+
+    /* ---------- 真心话大冒险弹窗 ---------- */
+    .truth-dialog {
+      width: min(92vw, 30rem);
+      max-width: 30rem;
+      max-height: 90vh;
+      margin: auto;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: #2B2B2B;
+      overflow: visible;
+    }
+    .truth-dialog::backdrop {
+      background: rgba(20, 20, 20, .72);
+      -webkit-backdrop-filter: blur(6px);
+      backdrop-filter: blur(6px);
+    }
+    body:has(.truth-dialog[open]) { overflow: hidden; }
+    .truth-modal-card {
+      --tm-bg: #FFF9EC;
+      --tm-text: #2B2B2B;
+      --tm-muted: rgba(43, 43, 43, .58);
+      --tm-border: #1F1F1F;
+      --tm-accent: #FFD23F;
+      --tm-soft: rgba(43, 43, 43, .07);
+      position: relative;
+      width: 100%;
+      max-height: 90vh;
+      overflow-x: hidden;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      padding: 2.15rem 2rem 2rem;
+      border: 2px solid var(--tm-border);
+      border-radius: 2rem;
+      background: var(--tm-bg);
+      color: var(--tm-text);
+      box-shadow: 0 8px 0 var(--tm-border), 0 40px 100px -30px rgba(0, 0, 0, .8);
+      animation: truth-modal-pop .32s cubic-bezier(.22, .9, .28, 1.16) both;
+    }
+    .truth-modal-card::before {
+      content: "";
+      position: absolute;
+      top: -5rem;
+      right: -4rem;
+      width: 12rem;
+      height: 12rem;
+      border-radius: 9999px;
+      background: var(--tm-accent);
+      opacity: .22;
+      pointer-events: none;
+    }
+    .truth-modal-card.is-dare {
+      --tm-bg: #2B2B2B;
+      --tm-text: #FFF9EC;
+      --tm-muted: rgba(255, 249, 236, .6);
+      --tm-border: #FFD23F;
+      --tm-accent: #FF7A59;
+      --tm-soft: rgba(255, 255, 255, .1);
+    }
+    @keyframes truth-modal-pop {
+      from { opacity: 0; transform: translateY(18px) scale(.95); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .truth-modal-close {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      z-index: 2;
+      display: grid;
+      place-items: center;
+      width: 2.3rem;
+      height: 2.3rem;
+      border-radius: 9999px;
+      background: var(--tm-soft);
+      color: var(--tm-text);
+      font-size: .95rem;
+      font-weight: 900;
+      cursor: pointer;
+      transition: transform .15s ease, background-color .15s ease, color .15s ease;
+    }
+    .truth-modal-close:hover {
+      transform: rotate(90deg);
+      background: var(--tm-accent);
+      color: #2B2B2B;
+    }
+    .truth-modal-close:focus-visible,
+    .truth-modal-skip:focus-visible { outline: 3px solid rgba(255, 210, 63, .75); outline-offset: 3px; }
+    .truth-modal-icon {
+      display: grid;
+      place-items: center;
+      width: 4.2rem;
+      height: 4.2rem;
+      border-radius: 1.35rem;
+      background: var(--tm-accent);
+      color: #2B2B2B;
+      font-size: 2rem;
+      box-shadow: 0 6px 0 var(--tm-border);
+      transform: rotate(-4deg);
+    }
+    .truth-modal-kicker {
+      margin-top: 1.35rem;
+      color: var(--tm-muted);
+      font-size: .65rem;
+      font-weight: 900;
+      letter-spacing: .22em;
+    }
+    .truth-modal-title {
+      margin-top: .3rem;
+      color: var(--tm-text);
+      font-size: clamp(1.9rem, 5vw, 2.4rem);
+      font-weight: 900;
+      line-height: 1.15;
+      letter-spacing: -.02em;
+    }
+    .truth-modal-prompt {
+      margin-top: .9rem;
+      color: var(--tm-text);
+      font-size: clamp(1.02rem, 3.4vw, 1.16rem);
+      font-weight: 700;
+      line-height: 1.75;
+      text-wrap: pretty;
+    }
+    .truth-modal-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: .65rem;
+      margin-top: 1.7rem;
+    }
+    .truth-modal-skip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 9999px;
+      border: 2px solid var(--tm-border);
+      color: var(--tm-text);
+      font-size: .85rem;
+      font-weight: 900;
+      cursor: pointer;
+      transition: background-color .15s ease, transform .12s ease;
+    }
+    .truth-modal-skip:hover { background: var(--tm-soft); transform: translateY(-1px); }
+    .truth-modal-skip:active { transform: translateY(1px); }
+    .truth-modal-note {
+      margin-top: .9rem;
+      color: var(--tm-muted);
+      font-size: .68rem;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    /* ---------- 无障碍 ---------- */
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .tab-panel, .lobby-view, .floaty, .radar-sweep, .radar-core::after, .blip, .dot-bounce,
+      .choice-slot.is-reveal, .choice-slot.is-gesture-reveal, .choice-slot.is-tumbling,
+      .choice-slot.is-gesture-reveal::before, .choice-slot.is-gesture-reveal::after,
+      .choice-slot.is-tumbling::after, .battle-orb.is-pop, .truth-modal-card,
+      .bg-note, .bg-particle,
+      .vs-overlay.is-active .vs-side, .vs-overlay.is-active .vs-fighter, .vs-overlay.is-active .vs-center,
+      .vs-overlay.is-active .vs-flash, .vs-overlay.is-active .vs-streaks {
+        animation: none !important;
+      }
+      .truth-wheel, .vs-overlay.is-out { transition: none !important; }
+    }
+  </style>
+</head>
+
+<body class="min-h-screen bg-cream font-sans text-ink antialiased">
+  <!-- 背景装饰 -->
+  <div class="pointer-events-none fixed inset-0 -z-10 overflow-hidden" aria-hidden="true">
+    <div class="dot-grid absolute inset-0"></div>
+    <div class="absolute -left-28 -top-28 h-80 w-80 rounded-full bg-sunny/30 blur-3xl"></div>
+    <div class="absolute -right-24 top-1/3 h-96 w-96 rounded-full bg-orange-200/40 blur-3xl"></div>
+    <div class="absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-yellow-100/70 blur-3xl"></div>
+    <div class="bg-particles">
+      <div class="bg-notes">
+        <span class="bg-note" style="--x: 5%; --delay: -2s; --dur: 26s; --size: 18px; --drift: 26px; --opacity: .18;">♪</span>
+        <span class="bg-note" style="--x: 16%; --delay: -14s; --dur: 31s; --size: 12px; --drift: -18px; --opacity: .14;">♫</span>
+        <span class="bg-note" style="--x: 28%; --delay: -7s; --dur: 23s; --size: 22px; --drift: 32px; --opacity: .12;">♬</span>
+        <span class="bg-note" style="--x: 39%; --delay: -19s; --dur: 34s; --size: 14px; --drift: -24px; --opacity: .16;">♪</span>
+        <span class="bg-note" style="--x: 51%; --delay: -10s; --dur: 28s; --size: 20px; --drift: 20px; --opacity: .13;">♫</span>
+        <span class="bg-note" style="--x: 63%; --delay: -4s; --dur: 25s; --size: 13px; --drift: -30px; --opacity: .17;">♪</span>
+        <span class="bg-note" style="--x: 74%; --delay: -22s; --dur: 36s; --size: 24px; --drift: 22px; --opacity: .11;">♬</span>
+        <span class="bg-note" style="--x: 84%; --delay: -9s; --dur: 27s; --size: 15px; --drift: -20px; --opacity: .16;">♫</span>
+        <span class="bg-note" style="--x: 92%; --delay: -16s; --dur: 30s; --size: 19px; --drift: 28px; --opacity: .13;">♪</span>
+        <span class="bg-note" style="--x: 46%; --delay: -26s; --dur: 38s; --size: 11px; --drift: 14px; --opacity: .12;">♬</span>
+      </div>
+      <div class="bg-dust">
+        <span class="bg-particle" style="--x: 10%; --delay: -3s; --dur: 19s; --size: 4px; --drift: 14px; --opacity: .22;"></span>
+        <span class="bg-particle" style="--x: 31%; --delay: -11s; --dur: 24s; --size: 6px; --drift: -18px; --opacity: .15;"></span>
+        <span class="bg-particle" style="--x: 47%; --delay: -6s; --dur: 21s; --size: 3px; --drift: 22px; --opacity: .25;"></span>
+        <span class="bg-particle" style="--x: 66%; --delay: -15s; --dur: 27s; --size: 5px; --drift: -12px; --opacity: .18;"></span>
+        <span class="bg-particle" style="--x: 81%; --delay: -8s; --dur: 23s; --size: 4px; --drift: 16px; --opacity: .2;"></span>
+        <span class="bg-particle" style="--x: 94%; --delay: -20s; --dur: 29s; --size: 3px; --drift: -16px; --opacity: .23;"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 顶部 -->
+  <header class="sticky top-0 z-40 border-b-2 border-ink/5 bg-cream/90 backdrop-blur-md">
+    <div class="mx-auto flex max-w-6xl flex-wrap items-center gap-x-3 gap-y-3 px-4 py-3 sm:gap-x-4 sm:px-6">
+      <a href="#rps" class="group flex min-w-0 shrink-0 items-center gap-2.5" aria-label="派对大玩家 · 返回猜拳对战">
+        <span class="grid h-10 w-10 shrink-0 place-items-center rounded-2xl border-2 border-ink bg-sunny text-xl shadow-[0_4px_0_#2B2B2B] transition-transform duration-200 group-hover:-rotate-6 sm:h-11 sm:w-11 sm:text-2xl" aria-hidden="true">🎉</span>
+        <span class="min-w-0 leading-none">
+          <h1 class="text-lg font-black tracking-tight sm:text-2xl">派对大玩家</h1>
+          <span class="mt-1 block text-[10px] font-bold tracking-[0.28em] text-ink/40">PARTY MASTER</span>
+        </span>
+      </a>
+
+      <nav class="order-last w-full min-w-0 sm:order-none sm:mx-auto sm:w-auto" aria-label="游戏导航">
+        <div class="flex items-center justify-between gap-1 rounded-full border-2 border-ink/10 bg-white p-1 shadow-sm sm:justify-start" role="tablist" aria-label="选择游戏">
+          <button type="button" class="tab-btn flex-1 sm:flex-none" id="tab-rps" data-tab="rps" role="tab" aria-selected="true" aria-controls="panel-rps" tabindex="0">
+            <span aria-hidden="true">✊</span>猜拳对战
+          </button>
+          <button type="button" class="tab-btn flex-1 sm:flex-none" id="tab-dice" data-tab="dice" role="tab" aria-selected="false" aria-controls="panel-dice" tabindex="-1">
+            <span aria-hidden="true">🎲</span>疯狂骰子
+          </button>
+          <button type="button" class="tab-btn flex-1 sm:flex-none" id="tab-truth" data-tab="truth" role="tab" aria-selected="false" aria-controls="panel-truth" tabindex="-1">
+            <span aria-hidden="true">🎤</span>真心话大冒险
+          </button>
+        </div>
+      </nav>
+
+      <div class="ml-auto flex min-w-0 items-center gap-2 rounded-full border-2 border-ink/10 bg-white py-1.5 pl-1.5 pr-2.5 shadow-sm sm:ml-0 sm:shrink-0 sm:gap-2.5 sm:pr-3.5">
+        <span class="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full border-2 border-ink/10 bg-sunny sm:h-10 sm:w-10" aria-hidden="true">
+          <svg viewBox="0 0 24 24" class="h-5 w-5 text-ink/70 sm:h-6 sm:w-6" fill="currentColor">
+            <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5Z" />
+          </svg>
+        </span>
+        <div class="min-w-0 leading-tight">
+          <div class="flex items-center gap-2">
+            <span data-nickname class="max-w-[6rem] truncate text-[13px] font-extrabold sm:max-w-[7.5rem] sm:text-sm">快乐小黄鸭</span>
+            <span data-rank-badge class="hidden shrink-0 items-center gap-1 rounded-full bg-[#F3E3D3] px-2 py-0.5 text-[10px] font-extrabold text-[#8A5A2B] ring-1 ring-[#D8B491]/60 sm:inline-flex">🥉 青铜 I</span>
+          </div>
+          <span class="block truncate text-[10px] font-semibold text-ink/40">
+            <span data-rank-line>青铜 I · ★0/10</span>
+            <span class="hidden sm:inline"> · 今日在线</span>
+          </span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="mx-auto w-full max-w-6xl px-4 pb-12 pt-6 sm:px-6 sm:pt-10">
+    <!-- ========== 猜拳对战 ========== -->
+    <section id="panel-rps" class="tab-panel" role="tabpanel" aria-labelledby="tab-rps">
+      <div class="grid items-stretch gap-5 lg:grid-cols-2">
+        <!-- 信息卡（移动端置后） -->
+        <article class="order-2 relative flex flex-col overflow-hidden rounded-[2rem] border-2 border-ink/10 bg-gradient-to-br from-[#FFE680] via-[#FFD84D] to-[#FFC300] p-7 shadow-[0_24px_60px_-34px_rgba(255,195,0,1)] sm:p-9 lg:order-1">
+          <div class="pointer-events-none absolute -right-12 -top-16 h-48 w-48 rounded-full bg-white/25"></div>
+          <div class="pointer-events-none absolute -bottom-20 -left-12 h-56 w-56 rounded-full bg-white/20"></div>
+          <div class="relative">
+            <span class="inline-flex items-center gap-1.5 rounded-full bg-ink px-3 py-1 text-[10px] font-extrabold tracking-[0.22em] text-sunny">
+              ROUND 01 · 猜拳对战
+            </span>
+            <h2 class="mt-5 text-3xl font-black leading-snug sm:text-4xl">石头剪刀布，<br />今天谁怕谁？</h2>
+            <p class="mt-3 max-w-sm text-sm font-medium leading-relaxed text-ink/65">
+              三局两胜的极速对决。别想太多，手速与心理的博弈，赢下这一局再说。
+            </p>
+
+            <div class="mt-7 flex items-end gap-3" aria-hidden="true">
+              <span class="floaty grid h-16 w-16 place-items-center rounded-2xl border-2 border-ink/10 bg-white/60 text-3xl shadow-sm" style="--rot: -8deg; animation-delay: .15s">✊</span>
+              <span class="floaty grid h-20 w-20 place-items-center rounded-3xl border-2 border-ink/10 bg-white text-4xl shadow-md" style="--rot: 3deg; animation-delay: .5s">✌️</span>
+              <span class="floaty grid h-16 w-16 place-items-center rounded-2xl border-2 border-ink/10 bg-white/60 text-3xl shadow-sm" style="--rot: 9deg">🖐️</span>
+            </div>
+          </div>
+
+          <dl class="relative mt-auto grid grid-cols-3 gap-2 pt-8">
+            <div class="rounded-2xl border border-ink/10 bg-white/60 px-2 py-2.5 text-center">
+              <dt class="text-[10px] font-bold text-ink/50">在线玩家</dt>
+              <dd class="mt-0.5 text-lg font-black tabular-nums">1,284</dd>
+            </div>
+            <div class="rounded-2xl border border-ink/10 bg-white/60 px-2 py-2.5 text-center">
+              <dt class="text-[10px] font-bold text-ink/50">平均等待</dt>
+              <dd class="mt-0.5 text-lg font-black tabular-nums">4<span class="ml-0.5 text-[10px] font-bold">秒</span></dd>
+            </div>
+            <div class="rounded-2xl border border-ink/10 bg-white/60 px-2 py-2.5 text-center">
+              <dt class="text-[10px] font-bold text-ink/50">今日对局</dt>
+              <dd class="mt-0.5 text-lg font-black tabular-nums">26,530</dd>
+            </div>
+          </dl>
+        </article>
+
+        <!-- 匹配大厅 -->
+        <aside data-match="rps" class="order-1 relative flex min-h-[31rem] flex-col overflow-hidden rounded-[2rem] border-2 border-ink bg-ink p-6 text-white shadow-[0_28px_70px_-34px_rgba(43,43,43,.9)] sm:min-h-[33rem] sm:p-8 lg:order-2">
+          <div class="dot-grid--dark pointer-events-none absolute inset-0 opacity-60" aria-hidden="true"></div>
+          <div class="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-sunny/10 blur-2xl" aria-hidden="true"></div>
+
+          <div class="relative flex h-full flex-col">
+            <div class="flex items-center justify-between">
+              <span class="inline-flex items-center gap-2 text-[10px] font-extrabold tracking-[0.25em] text-sunny">
+                <span class="h-1.5 w-1.5 rounded-full bg-sunny"></span><span data-room-label>匹配大厅</span>
+              </span>
+              <span class="inline-flex items-center gap-1.5 text-[10px] font-semibold text-white/45">
+                <span class="relative flex h-1.5 w-1.5">
+                  <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+                  <span class="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+                </span>
+                <span data-conn-state>服务在线</span>
+              </span>
+            </div>
+
+            <!-- 待机 -->
+            <div data-lobby="idle" class="lobby-view flex flex-1 flex-col items-center justify-center py-6 text-center">
+              <div class="relative mb-5 grid h-20 w-20 place-items-center rounded-[1.6rem] border-2 border-white/10 bg-white/5 text-4xl">
+                <span aria-hidden="true">✊</span>
+                <span class="absolute -right-2 -top-2 grid h-7 w-7 place-items-center rounded-full border-2 border-ink bg-sunny text-[10px] font-black text-ink">+15</span>
+              </div>
+              <h3 class="text-2xl font-black">准备好了吗？</h3>
+              <p class="mt-2 max-w-xs text-sm leading-relaxed text-white/55">
+                点击开始匹配，系统会为你找到一位实力相近的对手，马上开打。
+              </p>
+              <div class="mt-4 flex flex-wrap justify-center gap-2">
+                <span class="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-[11px] font-semibold text-white/65">三局两胜</span>
+                <span class="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-[11px] font-semibold text-white/65">胜场 +1 星</span>
+                <span class="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-[11px] font-semibold text-white/65">平均等待 4 秒</span>
+              </div>
+              <button type="button" data-action="start" class="btn-pop mt-6 w-full max-w-[16.5rem] px-8 py-3.5 text-base">
+                <span aria-hidden="true">⚡</span>开始匹配
+              </button>
+              <p class="mt-3 text-[11px] text-white/35">匹配免费 · 成功入座后自动开局</p>
+            </div>
+
+            <!-- 搜索中 -->
+            <div data-lobby="searching" class="lobby-view is-hidden flex-1 flex-col items-center justify-center py-2 text-center">
+              <div class="radar mt-2" aria-hidden="true">
+                <span class="radar-ring radar-ring--1"></span>
+                <span class="radar-ring radar-ring--2"></span>
+                <span class="radar-ring radar-ring--3"></span>
+                <span class="radar-cross-h"></span>
+                <span class="radar-cross-v"></span>
+                <span class="radar-sweep"></span>
+                <span class="blip" style="top: 22%; left: 30%; animation-delay: .2s"></span>
+                <span class="blip" style="top: 62%; left: 22%; animation-delay: 1.1s"></span>
+                <span class="blip" style="top: 32%; left: 68%; animation-delay: 1.9s"></span>
+                <span class="blip" style="top: 70%; left: 58%; animation-delay: 2.5s"></span>
+                <span class="radar-core">✊</span>
+              </div>
+
+              <p class="mt-5 inline-flex items-center gap-2 text-sm font-bold text-white/85" role="status" aria-live="polite">
+                正在搜索对手
+                <span class="inline-flex items-center gap-1" aria-hidden="true">
+                  <span class="dot-bounce" style="animation-delay: 0s"></span>
+                  <span class="dot-bounce" style="animation-delay: .15s"></span>
+                  <span class="dot-bounce" style="animation-delay: .3s"></span>
+                </span>
+              </p>
+              <p class="mt-1 text-[11px] text-white/40">优先匹配真实玩家 · 3 秒后自动启用 AI 陪练</p>
+
+              <div class="mt-4 inline-flex items-baseline gap-2 rounded-full border border-white/15 bg-white/5 px-5 py-2">
+                <span class="text-[11px] font-semibold text-white/50">当前已等待</span>
+                <span data-timer class="font-mono text-xl font-black tabular-nums text-sunny">00:00</span>
+              </div>
+
+              <p data-tip class="mt-3 min-h-[2.5rem] max-w-xs px-2 text-[11px] leading-relaxed text-white/35">
+                小提示：三局两胜，第一局先试探一下。
+              </p>
+
+              <button type="button" data-action="cancel" class="btn-ghost mt-3 px-7 py-2.5 text-sm">
+                取消匹配
+              </button>
+            </div>
+
+            <!-- 对战 -->
+            <div data-lobby="battle" class="lobby-view is-hidden flex flex-1 flex-col justify-center py-2">
+              <div class="grid grid-cols-[1fr_auto_1fr] items-start gap-1.5 sm:gap-3">
+                <div class="flex min-w-0 flex-col items-center text-center">
+                  <span class="relative">
+                    <span data-battle="my-avatar" class="grid h-11 w-11 place-items-center rounded-2xl border border-white/10 bg-sunny text-2xl" aria-hidden="true">🐥</span>
+                    <span class="absolute -bottom-1 -right-1 grid h-4 w-4 place-items-center rounded-full border border-ink bg-sunny text-[8px] font-black text-ink">你</span>
+                  </span>
+                  <p data-battle="my-name" class="mt-1.5 w-full truncate px-1 text-xs font-bold text-white/90">玩家1</p>
+                  <span data-battle="my-rank" class="mt-1 rounded-full bg-white/10 px-2 py-0.5 text-[9px] font-semibold text-white/55">青铜 I</span>
+                  <div data-battle="my-choice" class="choice-slot mt-2.5" aria-label="我的选择">❔</div>
+                  <p class="mt-1.5 text-[10px] font-semibold text-white/40">得分 <span data-battle="my-score" class="text-sm font-black text-sunny">0</span></p>
+                </div>
+
+                <div class="flex min-w-0 flex-col items-center pt-5">
+                  <p data-battle="round-label" class="text-[9px] font-bold tracking-[0.12em] text-white/40">第 1 局</p>
+                  <div data-battle="orb" class="battle-orb mt-2">VS</div>
+                  <p data-battle="status" class="mt-2 min-h-[2.25rem] max-w-[6.5rem] text-[10px] leading-relaxed text-white/50" aria-live="polite">准备…</p>
+                </div>
+
+                <div class="flex min-w-0 flex-col items-center text-center">
+                  <span data-battle="opp-avatar" class="grid h-11 w-11 place-items-center rounded-2xl border border-white/10 bg-white/10 text-2xl" aria-hidden="true">🦊</span>
+                  <p data-battle="opp-name" class="mt-1.5 w-full truncate px-1 text-xs font-bold text-white/90">对手</p>
+                  <span data-battle="opp-rank" class="mt-1 rounded-full bg-white/10 px-2 py-0.5 text-[9px] font-semibold text-white/55">青铜 I</span>
+                  <div data-battle="opp-choice" class="choice-slot mt-2.5" aria-label="对手的选择">❔</div>
+                  <p class="mt-1.5 text-[10px] font-semibold text-white/40">得分 <span data-battle="opp-score" class="text-sm font-black text-sunny">0</span></p>
+                </div>
+              </div>
+
+              <div data-battle="actions" class="mx-auto mt-5 flex w-full max-w-[19rem] flex-col items-stretch justify-center gap-2">
+                <div class="flex items-stretch justify-center gap-2">
+                  <button type="button" class="rps-btn" data-rps-pick="rock"><span aria-hidden="true">✊</span>石头</button>
+                  <button type="button" class="rps-btn" data-rps-pick="scissors"><span aria-hidden="true">✌️</span>剪刀</button>
+                  <button type="button" class="rps-btn" data-rps-pick="paper"><span aria-hidden="true">🖐️</span>布</button>
+                </div>
+                <button type="button" data-rps-confirm class="btn-pop w-full px-5 py-2.5 text-sm" disabled>确认出拳</button>
+              </div>
+
+              <div data-battle="result-actions" class="is-hidden mx-auto mt-5 flex items-center justify-center gap-2">
+                <button type="button" data-battle="rematch" class="btn-pop px-5 py-2.5 text-sm">再来一局</button>
+                <button type="button" data-battle="exit" class="btn-ghost px-5 py-2.5 text-sm">返回大厅</button>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ========== 疯狂骰子 ========== -->
+    <section id="panel-dice" class="tab-panel is-hidden" role="tabpanel" aria-labelledby="tab-dice">
+      <div class="grid items-stretch gap-5 lg:grid-cols-2">
+        <article class="order-2 relative flex flex-col overflow-hidden rounded-[2rem] border-2 border-ink/10 bg-gradient-to-br from-[#FFE680] via-[#FFD84D] to-[#FFC300] p-7 shadow-[0_24px_60px_-34px_rgba(255,195,0,1)] sm:p-9 lg:order-1">
+          <div class="pointer-events-none absolute -right-12 -top-16 h-48 w-48 rounded-full bg-white/25"></div>
+          <div class="pointer-events-none absolute -bottom-20 -left-12 h-56 w-56 rounded-full bg-white/20"></div>
+          <div class="relative">
+            <span class="inline-flex items-center gap-1.5 rounded-full bg-ink px-3 py-1 text-[10px] font-extrabold tracking-[0.22em] text-sunny">
+              ROUND 02 · 疯狂骰子
+            </span>
+            <h2 class="mt-5 text-3xl font-black leading-snug sm:text-4xl">骰子一掷，<br />听天由命？</h2>
+            <p class="mt-3 max-w-sm text-sm font-medium leading-relaxed text-ink/65">
+              单局定胜负的运气对决。点数大的赢，点数一样就加时再来一局，敢不敢试试手气？
+            </p>
+
+            <div class="mt-7 flex items-end gap-3" aria-hidden="true">
+              <span class="floaty grid h-16 w-16 place-items-center rounded-2xl border-2 border-ink/10 bg-white/60 text-3xl shadow-sm" style="--rot: -10deg; animation-delay: .2s">🎲</span>
+              <span class="floaty grid h-20 w-20 place-items-center rounded-3xl border-2 border-ink/10 bg-white text-4xl shadow-md" style="--rot: 4deg; animation-delay: .55s">🎲</span>
+              <span class="floaty grid h-16 w-16 place-items-center rounded-2xl border-2 border-ink/10 bg-white/60 text-3xl shadow-sm" style="--rot: 11deg">🎲</span>
+            </div>
+          </div>
+
+          <dl class="relative mt-auto grid grid-cols-3 gap-2 pt-8">
+            <div class="rounded-2xl border border-ink/10 bg-white/60 px-2 py-2.5 text-center">
+              <dt class="text-[10px] font-bold text-ink/50">在线玩家</dt>
+              <dd class="mt-0.5 text-lg font-black tabular-nums">968</dd>
+            </div>
+            <div class="rounded-2xl border border-ink/10 bg-white/60 px-2 py-2.5 text-center">
+              <dt class="text-[10px] font-bold text-ink/50">平均等待</dt>
+              <dd class="mt-0.5 text-lg font-black tabular-nums">3<span class="ml-0.5 text-[10px] font-bold">秒</span></dd>
+            </div>
+            <div class="rounded-2xl border border-ink/10 bg-white/60 px-2 py-2.5 text-center">
+              <dt class="text-[10px] font-bold text-ink/50">今日对局</dt>
+              <dd class="mt-0.5 text-lg font-black tabular-nums">18,204</dd>
+            </div>
+          </dl>
+        </article>
+
+        <aside data-match="dice" class="order-1 relative flex min-h-[31rem] flex-col overflow-hidden rounded-[2rem] border-2 border-ink bg-ink p-6 text-white shadow-[0_28px_70px_-34px_rgba(43,43,43,.9)] sm:min-h-[33rem] sm:p-8 lg:order-2">
+          <div class="dot-grid--dark pointer-events-none absolute inset-0 opacity-60" aria-hidden="true"></div>
+          <div class="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-sunny/10 blur-2xl" aria-hidden="true"></div>
+
+          <div class="relative flex h-full flex-col">
+            <div class="flex items-center justify-between">
+              <span class="inline-flex items-center gap-2 text-[10px] font-extrabold tracking-[0.25em] text-sunny">
+                <span class="h-1.5 w-1.5 rounded-full bg-sunny"></span><span data-room-label>匹配大厅</span>
+              </span>
+              <span class="inline-flex items-center gap-1.5 text-[10px] font-semibold text-white/45">
+                <span class="relative flex h-1.5 w-1.5">
+                  <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+                  <span class="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+                </span>
+                <span data-conn-state>服务在线</span>
+              </span>
+            </div>
+
+            <div data-lobby="idle" class="lobby-view flex flex-1 flex-col items-center justify-center py-6 text-center">
+              <div class="relative mb-5 grid h-20 w-20 place-items-center rounded-[1.6rem] border-2 border-white/10 bg-white/5 text-4xl">
+                <span aria-hidden="true">🎲</span>
+                <span class="absolute -right-2 -top-2 grid h-7 w-7 place-items-center rounded-full border-2 border-ink bg-sunny text-[10px] font-black text-ink">+15</span>
+              </div>
+              <h3 class="text-2xl font-black">今天手气如何？</h3>
+              <p class="mt-2 max-w-xs text-sm leading-relaxed text-white/55">
+                点击开始匹配，和一位同样敢赌运气的玩家对掷一把，点数大的人说了算。
+              </p>
+              <div class="mt-4 flex flex-wrap justify-center gap-2">
+                <span class="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-[11px] font-semibold text-white/65">单局定胜负</span>
+                <span class="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-[11px] font-semibold text-white/65">可选 1-3 颗</span>
+                <span class="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-[11px] font-semibold text-white/65">胜场 +1 星</span>
+              </div>
+              <button type="button" data-action="start" class="btn-pop mt-6 w-full max-w-[16.5rem] px-8 py-3.5 text-base">
+                <span aria-hidden="true">⚡</span>开始匹配
+              </button>
+              <p class="mt-3 text-[11px] text-white/35">匹配免费 · 开局自动掷骰</p>
+            </div>
+
+            <div data-lobby="searching" class="lobby-view is-hidden flex-1 flex-col items-center justify-center py-2 text-center">
+              <div class="radar mt-2" aria-hidden="true">
+                <span class="radar-ring radar-ring--1"></span>
+                <span class="radar-ring radar-ring--2"></span>
+                <span class="radar-ring radar-ring--3"></span>
+                <span class="radar-cross-h"></span>
+                <span class="radar-cross-v"></span>
+                <span class="radar-sweep"></span>
+                <span class="blip" style="top: 26%; left: 26%; animation-delay: .4s"></span>
+                <span class="blip" style="top: 58%; left: 24%; animation-delay: 1.3s"></span>
+                <span class="blip" style="top: 34%; left: 66%; animation-delay: 2.1s"></span>
+                <span class="blip" style="top: 68%; left: 62%; animation-delay: 2.7s"></span>
+                <span class="radar-core">🎲</span>
+              </div>
+
+              <p class="mt-5 inline-flex items-center gap-2 text-sm font-bold text-white/85" role="status" aria-live="polite">
+                正在搜索对手
+                <span class="inline-flex items-center gap-1" aria-hidden="true">
+                  <span class="dot-bounce" style="animation-delay: 0s"></span>
+                  <span class="dot-bounce" style="animation-delay: .15s"></span>
+                  <span class="dot-bounce" style="animation-delay: .3s"></span>
+                </span>
+              </p>
+              <p class="mt-1 text-[11px] text-white/40">优先匹配真实玩家 · 3 秒后自动启用 AI 陪练</p>
+
+              <div class="mt-4 inline-flex items-baseline gap-2 rounded-full border border-white/15 bg-white/5 px-5 py-2">
+                <span class="text-[11px] font-semibold text-white/50">当前已等待</span>
+                <span data-timer class="font-mono text-xl font-black tabular-nums text-sunny">00:00</span>
+              </div>
+
+              <p data-tip class="mt-3 min-h-[2.5rem] max-w-xs px-2 text-[11px] leading-relaxed text-white/35">
+                小提示：骰子点数相同会进入加时赛。
+              </p>
+
+              <button type="button" data-action="cancel" class="btn-ghost mt-3 px-7 py-2.5 text-sm">
+                取消匹配
+              </button>
+            </div>
+
+            <!-- 对战 -->
+            <div data-lobby="battle" class="lobby-view is-hidden flex flex-1 flex-col justify-center py-2">
+              <div class="grid grid-cols-[1fr_auto_1fr] items-start gap-1.5 sm:gap-3">
+                <div class="flex min-w-0 flex-col items-center text-center">
+                  <span class="relative">
+                    <span data-battle="my-avatar" class="grid h-11 w-11 place-items-center rounded-2xl border border-white/10 bg-sunny text-2xl" aria-hidden="true">🐥</span>
+                    <span class="absolute -bottom-1 -right-1 grid h-4 w-4 place-items-center rounded-full border border-ink bg-sunny text-[8px] font-black text-ink">你</span>
+                  </span>
+                  <p data-battle="my-name" class="mt-1.5 w-full truncate px-1 text-xs font-bold text-white/90">玩家1</p>
+                  <span data-battle="my-rank" class="mt-1 rounded-full bg-white/10 px-2 py-0.5 text-[9px] font-semibold text-white/55">青铜 I</span>
+                  <div data-battle="my-choice" class="choice-slot mt-2.5" aria-label="我的选择">🎲</div>
+                  <p class="mt-1.5 text-[10px] font-semibold text-white/40">得分 <span data-battle="my-score" class="text-sm font-black text-sunny">0</span></p>
+                </div>
+
+                <div class="flex min-w-0 flex-col items-center pt-5">
+                  <p data-battle="round-label" class="text-[9px] font-bold tracking-[0.12em] text-white/40">一局定胜负</p>
+                  <div data-battle="orb" class="battle-orb mt-2">VS</div>
+                  <p data-battle="status" class="mt-2 min-h-[2.25rem] max-w-[6.5rem] text-[10px] leading-relaxed text-white/50" aria-live="polite">准备…</p>
+                </div>
+
+                <div class="flex min-w-0 flex-col items-center text-center">
+                  <span data-battle="opp-avatar" class="grid h-11 w-11 place-items-center rounded-2xl border border-white/10 bg-white/10 text-2xl" aria-hidden="true">🦊</span>
+                  <p data-battle="opp-name" class="mt-1.5 w-full truncate px-1 text-xs font-bold text-white/90">对手</p>
+                  <span data-battle="opp-rank" class="mt-1 rounded-full bg-white/10 px-2 py-0.5 text-[9px] font-semibold text-white/55">青铜 I</span>
+                  <div data-battle="opp-choice" class="choice-slot mt-2.5" aria-label="对手的选择">🎲</div>
+                  <p class="mt-1.5 text-[10px] font-semibold text-white/40">得分 <span data-battle="opp-score" class="text-sm font-black text-sunny">0</span></p>
+                </div>
+              </div>
+
+              <div data-battle="actions" class="mx-auto mt-5 flex w-full max-w-[19rem] flex-col justify-center gap-2.5">
+                <div class="dice-count" role="group" aria-label="选择骰子数量">
+                  <button type="button" class="dice-count-btn" data-dice-count="1">1 颗</button>
+                  <button type="button" class="dice-count-btn is-active" data-dice-count="2" aria-pressed="true">2 颗</button>
+                  <button type="button" class="dice-count-btn" data-dice-count="3">3 颗</button>
+                </div>
+                <button type="button" data-dice-roll class="btn-pop w-full px-8 py-3.5 text-base"><span aria-hidden="true">🎲</span>掷骰子</button>
+              </div>
+
+              <div data-battle="result-actions" class="is-hidden mx-auto mt-5 flex items-center justify-center gap-2">
+                <button type="button" data-battle="rematch" class="btn-pop px-5 py-2.5 text-sm">再来一局</button>
+                <button type="button" data-battle="exit" class="btn-ghost px-5 py-2.5 text-sm">返回大厅</button>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ========== 真心话大冒险 ========== -->
+    <section id="panel-truth" class="tab-panel is-hidden" role="tabpanel" aria-labelledby="tab-truth">
+      <div class="grid items-stretch gap-5 lg:grid-cols-[0.92fr_1.08fr]">
+        <!-- 信息卡（移动端置后） -->
+        <article class="order-2 relative flex flex-col overflow-hidden rounded-[2rem] border-2 border-ink/10 bg-gradient-to-br from-[#FFE680] via-[#FFD84D] to-[#FFC300] p-7 shadow-[0_24px_60px_-34px_rgba(255,195,0,1)] sm:p-9 lg:order-1">
+          <div class="pointer-events-none absolute -right-12 -top-16 h-48 w-48 rounded-full bg-white/25"></div>
+          <div class="pointer-events-none absolute -bottom-20 -left-12 h-56 w-56 rounded-full bg-white/20"></div>
+
+          <div class="relative">
+            <span class="inline-flex items-center gap-1.5 rounded-full bg-ink px-3 py-1 text-[10px] font-extrabold tracking-[0.22em] text-sunny">
+              ROUND 03 · 真心话大冒险
+            </span>
+            <h2 class="mt-5 text-3xl font-black leading-snug sm:text-4xl">转一下，<br />敢不敢接招？</h2>
+            <p class="mt-3 max-w-sm text-sm font-medium leading-relaxed text-ink/65">
+              8 个扇区，20 道精选题目。真心话与大冒险交替排布，指针停在哪儿，今晚的题目就由哪儿决定。
+            </p>
+
+            <ol class="mt-6 space-y-2.5 text-sm font-semibold text-ink/70">
+              <li class="flex items-center gap-3">
+                <span class="grid h-6 w-6 shrink-0 place-items-center rounded-full border border-ink/15 bg-white/70 text-[11px] font-black" aria-hidden="true">1</span>
+                点击「开始转动」，让转盘随机旋转 5–7 圈
+              </li>
+              <li class="flex items-center gap-3">
+                <span class="grid h-6 w-6 shrink-0 place-items-center rounded-full border border-ink/15 bg-white/70 text-[11px] font-black" aria-hidden="true">2</span>
+                等指针停稳，看看命运选中哪一边
+              </li>
+              <li class="flex items-center gap-3">
+                <span class="grid h-6 w-6 shrink-0 place-items-center rounded-full border border-ink/15 bg-white/70 text-[11px] font-black" aria-hidden="true">3</span>
+                弹出题目后，完成挑战才算过关
+              </li>
+            </ol>
+
+            <div class="mt-6 flex flex-wrap gap-2 text-[11px] font-bold" aria-hidden="true">
+              <span class="rounded-full border border-ink/10 bg-white/65 px-3 py-1.5">💬 真心话 · 10 题</span>
+              <span class="rounded-full border border-ink/10 bg-ink px-3 py-1.5 text-sunny">🔥 大冒险 · 10 题</span>
+            </div>
+          </div>
+
+          <dl class="relative mt-auto grid grid-cols-3 gap-2 pt-8">
+            <div class="rounded-2xl border border-ink/10 bg-white/60 px-2 py-2.5 text-center">
+              <dt class="text-[10px] font-bold text-ink/50">转盘扇区</dt>
+              <dd class="mt-0.5 text-lg font-black tabular-nums">8</dd>
+            </div>
+            <div class="rounded-2xl border border-ink/10 bg-white/60 px-2 py-2.5 text-center">
+              <dt class="text-[10px] font-bold text-ink/50">内置题库</dt>
+              <dd class="mt-0.5 text-lg font-black tabular-nums">20</dd>
+            </div>
+            <div class="rounded-2xl border border-ink/10 bg-white/60 px-2 py-2.5 text-center">
+              <dt class="text-[10px] font-bold text-ink/50">随机旋转</dt>
+              <dd class="mt-0.5 text-lg font-black tabular-nums">5–7<span class="ml-0.5 text-[10px] font-bold">圈</span></dd>
+            </div>
+          </dl>
+        </article>
+
+        <!-- 转盘舞台 -->
+        <aside class="order-1 relative flex min-h-[30rem] flex-col overflow-hidden rounded-[2rem] border-2 border-ink bg-ink p-5 text-white shadow-[0_28px_70px_-34px_rgba(43,43,43,.9)] sm:min-h-[33rem] sm:p-7 lg:order-2">
+          <div class="dot-grid--dark pointer-events-none absolute inset-0 opacity-60" aria-hidden="true"></div>
+          <div class="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-sunny/10 blur-2xl" aria-hidden="true"></div>
+          <div class="pointer-events-none absolute -bottom-20 -left-20 h-56 w-56 rounded-full bg-[#FF7A59]/10 blur-2xl" aria-hidden="true"></div>
+
+          <div class="relative flex h-full flex-col">
+            <div class="flex items-center justify-between">
+              <span class="inline-flex items-center gap-2 text-[10px] font-extrabold tracking-[0.25em] text-sunny">
+                <span class="h-1.5 w-1.5 rounded-full bg-sunny"></span>命运转盘
+              </span>
+              <span class="text-[10px] font-semibold text-white/40">TRUTH OR DARE</span>
+            </div>
+
+            <div class="flex flex-1 flex-col items-center justify-center py-5 sm:py-6">
+              <div class="wheel-rig">
+                <div class="wheel-shell">
+                  <div class="truth-wheel" data-truth-wheel role="img" aria-label="真心话大冒险转盘，共 8 个扇区，真心话和大冒险交替排列">
+                    <div class="wheel-labels" data-wheel-labels aria-hidden="true"></div>
+                  </div>
+                </div>
+                <div class="wheel-pointer" aria-hidden="true">
+                  <svg class="wheel-needle" viewBox="0 0 24 84" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2 20 28 15 28 15 82 9 82 9 28 4 28Z" fill="#FFD23F" stroke="#1F1F1F" stroke-width="2.5" stroke-linejoin="round"/>
+                  </svg>
+                  <span class="wheel-hub">🎯</span>
+                </div>
+              </div>
+
+              <button type="button" data-truth-spin class="btn-pop mt-6 w-full max-w-[17rem] px-8 py-3.5 text-base" aria-describedby="truth-status">
+                <span aria-hidden="true">🎡</span><span data-truth-spin-label>开始转动</span>
+              </button>
+              <p id="truth-status" data-truth-status class="mt-3 text-center text-[11px] font-semibold text-white/40" role="status" aria-live="polite">
+                点击开始，让转盘替你选
+              </p>
+
+              <div class="mt-4 flex items-center gap-2 text-[10px] font-bold text-white/35" aria-hidden="true">
+                <span class="rounded-full border border-white/10 bg-white/5 px-2.5 py-1">💬 真心话 × 4</span>
+                <span class="rounded-full border border-white/10 bg-white/5 px-2.5 py-1">🔥 大冒险 × 4</span>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <footer class="mx-auto max-w-6xl px-4 pb-10 pt-2 text-center sm:px-6">
+    <p class="text-[11px] font-medium text-ink/35">派对大玩家 · MVP v0.1 —— 用一点点运气，换一整晚开心</p>
+  </footer>
+
+  <div data-star-toast class="star-toast" role="status" aria-live="polite"></div>
+
+  <div data-vs-overlay class="vs-overlay" aria-hidden="true">
+    <div class="vs-flash"></div>
+    <div class="vs-side vs-side--me">
+      <div class="vs-fighter">
+        <span data-vs-me-avatar class="vs-fighter-avatar">🐥</span>
+        <span class="vs-fighter-tag">YOU</span>
+        <p data-vs-me-name class="vs-fighter-name">玩家</p>
+      </div>
+    </div>
+    <div class="vs-side vs-side--opp">
+      <div class="vs-fighter">
+        <span data-vs-opp-avatar class="vs-fighter-avatar">🦊</span>
+        <span class="vs-fighter-tag">RIVAL</span>
+        <p data-vs-opp-name class="vs-fighter-name">对手</p>
+      </div>
+    </div>
+    <div class="vs-center">
+      <span class="vs-kicker">MATCH FOUND</span>
+      <strong class="vs-word">VS</strong>
+      <span class="vs-sub">准备开战</span>
+    </div>
+    <div class="vs-streaks"></div>
+  </div>
+
+  <dialog data-truth-modal class="truth-dialog" aria-labelledby="truth-modal-title" aria-describedby="truth-modal-prompt">
+    <div class="truth-modal-card" data-truth-card>
+      <button type="button" data-truth-close class="truth-modal-close" aria-label="关闭题目弹窗">✕</button>
+      <div class="truth-modal-icon" data-truth-icon aria-hidden="true">💬</div>
+      <p class="truth-modal-kicker" data-truth-kicker>TRUTH · 命运选中了你</p>
+      <h2 id="truth-modal-title" data-truth-title class="truth-modal-title">真心话</h2>
+      <p id="truth-modal-prompt" data-truth-prompt class="truth-modal-prompt"></p>
+      <div class="truth-modal-actions">
+        <button type="button" data-truth-again class="btn-pop px-4 py-3 text-sm">再转一次</button>
+        <button type="button" data-truth-accept class="truth-modal-skip px-4 py-3 text-sm">收下挑战</button>
+      </div>
+      <p class="truth-modal-note">完成题目后，再回来转下一轮</p>
+    </div>
+  </dialog>
+
+  <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script>
+    (() => {
+      'use strict';
+
+      /* ---------- 玩家身份 ---------- */
+      const NICK_PREFIX = ['快乐', '暴走', '元气', '软萌', '佛系', '电光', '慢半拍', '满分', '打盹', '冒泡', '星光', '彩虹', '糯叽叽', '飞天', '柠檬味', '不睡觉'];
+      const NICK_NOUN = ['小黄鸭', '仓鼠球', '棉花糖', '小泡芙', '柠檬精', '小柴犬', '果冻怪', '奶茶侠', '云朵猫', '小企鹅', '跳跳糖', '布丁熊', '小恐龙', '芝士君', '小汤圆', '泡泡龙'];
+      const AI_NAMES = ['爱吃肉的兔子', '不想起床的猫', '深夜炸鸡侠', '摸鱼冠军', '会飞的土豆', '加冰不加糖', '芝士就是力量', '半糖去冰', '一只小胖橘', '冷静的柠檬', '偷看星星的人', '周一综合症'];
+      const RANKS = ['青铜 I', '青铜 II', '青铜 III', '白银 I', '白银 II', '黄金 I', '黄金 II', '星耀 I'];
+      const RANK_EMBLEMS = ['🥉', '🥉', '🥉', '🥈', '🥈', '🥇', '🥇', '✨'];
+      const AVATARS = ['🐥', '🐰', '🦊', '🐼', '🐸', '🐨', '🐯', '🦆'];
+      const PROFILE_KEY = 'pm-party-profile-v1';
+      const STARS_PER_RANK = 10;
+      const AI_WIN_RATE = 0.4;
+      const pick = (list) => list[Math.floor(Math.random() * list.length)];
+      const clampInt = (value, min, max, fallback) => {
+        const number = Number(value);
+        return Number.isFinite(number) ? Math.max(min, Math.min(max, Math.floor(number))) : fallback;
+      };
+
+      function loadPlayerProfile() {
+        let saved = null;
+        try {
+          saved = JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null');
+        } catch (error) {
+          saved = null;
+        }
+        const source = saved && typeof saved === 'object' ? saved : {};
+        const rankIndex = clampInt(source.rankIndex, 0, RANKS.length - 1, 0);
+        return {
+          name: typeof source.name === 'string' && source.name.trim()
+            ? source.name.trim().slice(0, 16)
+            : pick(NICK_PREFIX) + pick(NICK_NOUN),
+          avatar: AVATARS.includes(source.avatar) ? source.avatar : pick(AVATARS),
+          rankIndex,
+          stars: clampInt(source.stars, 0, STARS_PER_RANK, 0),
+          wins: clampInt(source.wins, 0, 999999, 0),
+          losses: clampInt(source.losses, 0, 999999, 0),
+          rank: RANKS[rankIndex]
+        };
+      }
+
+      function savePlayerProfile() {
+        try {
+          localStorage.setItem(PROFILE_KEY, JSON.stringify({
+            name: MY_PROFILE.name,
+            avatar: MY_PROFILE.avatar,
+            rankIndex: MY_PROFILE.rankIndex,
+            stars: MY_PROFILE.stars,
+            wins: MY_PROFILE.wins,
+            losses: MY_PROFILE.losses
+          }));
+        } catch (error) {
+          /* 隐私模式下 LocalStorage 可能不可用，降级为本次会话内生效 */
+        }
+      }
+
+      function renderMyProfile() {
+        const emblem = RANK_EMBLEMS[MY_PROFILE.rankIndex] || '🥉';
+        document.querySelectorAll('[data-nickname]').forEach((el) => {
+          el.textContent = MY_PROFILE.name;
+        });
+        document.querySelectorAll('[data-rank-badge]').forEach((el) => {
+          el.textContent = emblem + ' ' + MY_PROFILE.rank;
+        });
+        document.querySelectorAll('[data-rank-line]').forEach((el) => {
+          el.textContent = MY_PROFILE.rank + ' · ★' + MY_PROFILE.stars + '/' + STARS_PER_RANK;
+        });
+        document.querySelectorAll('[data-battle="my-rank"]').forEach((el) => {
+          el.textContent = MY_PROFILE.rank + ' · ★' + MY_PROFILE.stars;
+        });
+      }
+
+      const MY_PROFILE = loadPlayerProfile();
+      const myPublicProfile = () => ({
+        name: MY_PROFILE.name,
+        avatar: MY_PROFILE.avatar,
+        rank: MY_PROFILE.rank
+      });
+      const MY_SID = Math.random().toString(36).slice(2) + Date.now().toString(36);
+      renderMyProfile();
+      savePlayerProfile();
+
+      let starToastTimer = null;
+      function showStarToast(text) {
+        const toast = document.querySelector('[data-star-toast]');
+        if (!toast) return;
+        if (starToastTimer) clearTimeout(starToastTimer);
+        toast.textContent = text;
+        toast.classList.add('is-visible');
+        starToastTimer = setTimeout(() => {
+          toast.classList.remove('is-visible');
+          starToastTimer = null;
+        }, 2800);
+      }
+
+      const prefersReducedMotion = window.matchMedia
+        ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        : false;
+      const VS_VISIBLE_MS = prefersReducedMotion ? 620 : 1120;
+      const VS_FADE_MS = prefersReducedMotion ? 0 : 300;
+      const VS_COUNTDOWN_MS = VS_VISIBLE_MS + VS_FADE_MS;
+      const vsOverlay = document.querySelector('[data-vs-overlay]');
+      const vsMeAvatar = vsOverlay ? vsOverlay.querySelector('[data-vs-me-avatar]') : null;
+      const vsMeName = vsOverlay ? vsOverlay.querySelector('[data-vs-me-name]') : null;
+      const vsOppAvatar = vsOverlay ? vsOverlay.querySelector('[data-vs-opp-avatar]') : null;
+      const vsOppName = vsOverlay ? vsOverlay.querySelector('[data-vs-opp-name]') : null;
+      let vsIntroTimers = [];
+
+      function clearVsIntroTimers() {
+        vsIntroTimers.forEach((timer) => clearTimeout(timer));
+        vsIntroTimers = [];
+      }
+
+      function hideVsIntro() {
+        clearVsIntroTimers();
+        if (vsOverlay) vsOverlay.classList.remove('is-active', 'is-out');
+      }
+
+      function playVsIntro(me, opp) {
+        if (!vsOverlay) return;
+        clearVsIntroTimers();
+        vsOverlay.classList.remove('is-active', 'is-out');
+        if (vsMeAvatar) vsMeAvatar.textContent = me && me.avatar ? me.avatar : '🐥';
+        if (vsMeName) vsMeName.textContent = me && me.name ? me.name : '玩家';
+        if (vsOppAvatar) vsOppAvatar.textContent = opp && opp.avatar ? opp.avatar : '🦊';
+        if (vsOppName) vsOppName.textContent = opp && opp.name ? opp.name : '对手';
+        void vsOverlay.offsetWidth;
+        vsOverlay.classList.add('is-active');
+        vsIntroTimers.push(setTimeout(() => {
+          vsOverlay.classList.add('is-out');
+          vsIntroTimers.push(setTimeout(() => {
+            vsOverlay.classList.remove('is-active', 'is-out');
+          }, VS_FADE_MS));
+        }, VS_VISIBLE_MS));
+      }
+
+      function recordMatchResult(won) {
+        const previousRank = MY_PROFILE.rankIndex;
+        const previousStars = MY_PROFILE.stars;
+        const wasMaxed = MY_PROFILE.rankIndex === RANKS.length - 1 && previousStars >= STARS_PER_RANK;
+        let promoted = false;
+
+        if (won) {
+          MY_PROFILE.wins += 1;
+          if (MY_PROFILE.stars < STARS_PER_RANK) MY_PROFILE.stars += 1;
+          if (MY_PROFILE.stars >= STARS_PER_RANK && MY_PROFILE.rankIndex < RANKS.length - 1) {
+            MY_PROFILE.rankIndex += 1;
+            MY_PROFILE.stars = 0;
+          }
+        } else {
+          MY_PROFILE.losses += 1;
+          MY_PROFILE.stars = Math.max(0, MY_PROFILE.stars - 1);
+        }
+
+        MY_PROFILE.rank = RANKS[MY_PROFILE.rankIndex];
+        promoted = MY_PROFILE.rankIndex > previousRank;
+        savePlayerProfile();
+        renderMyProfile();
+
+        return {
+          won,
+          promoted,
+          capped: won && wasMaxed,
+          floor: !won && previousStars === 0,
+          delta: promoted ? 1 : MY_PROFILE.stars - previousStars,
+          rank: MY_PROFILE.rank,
+          stars: MY_PROFILE.stars
+        };
+      }
+
+      /* ---------- 标签页切换 ---------- */
+      const tabs = Array.from(document.querySelectorAll('[role="tab"][data-tab]'));
+      const panels = Array.from(document.querySelectorAll('.tab-panel'));
+      const validTabs = tabs.map((tab) => tab.dataset.tab);
+
+      function writeHash(name) {
+        try {
+          history.replaceState(null, '', '#' + name);
+        } catch (error) {
+          /* file:// 下 replaceState 可能受限，忽略即可 */
+        }
+      }
+
+      function setTab(name, options = {}) {
+        if (!validTabs.includes(name)) name = 'rps';
+
+        tabs.forEach((tab) => {
+          const active = tab.dataset.tab === name;
+          tab.setAttribute('aria-selected', String(active));
+          tab.tabIndex = active ? 0 : -1;
+        });
+        panels.forEach((panel) => {
+          panel.classList.toggle('is-hidden', panel.id !== 'panel-' + name);
+        });
+
+        if (options.focus) {
+          const target = document.getElementById('tab-' + name);
+          if (target) target.focus();
+        }
+        if (options.hash) writeHash(name);
+      }
+
+      tabs.forEach((tab, index) => {
+        tab.addEventListener('click', () => setTab(tab.dataset.tab, { hash: true }));
+        tab.addEventListener('keydown', (event) => {
+          const step = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
+          if (!step) return;
+          event.preventDefault();
+          const next = tabs[(index + step + tabs.length) % tabs.length];
+          setTab(next.dataset.tab, { focus: true, hash: true });
+        });
+      });
+
+      const initialTab = location.hash.replace('#', '');
+      setTab(validTabs.includes(initialTab) ? initialTab : 'rps');
+
+      window.addEventListener('hashchange', () => {
+        const name = location.hash.replace('#', '');
+        if (validTabs.includes(name)) setTab(name);
+      });
+
+      /* ---------- 联机匹配 & 对战 ---------- */
+      const TIPS = {
+        rps: [
+          '小提示：三局两胜，第一局先试探一下。',
+          '小提示：连续出同样的手势，也是一种心理战。',
+          '小提示：别眨眼，对手可能正在研究你的习惯。'
+        ],
+        dice: [
+          '小提示：骰子点数相同会进入加时赛。',
+          '小提示：深呼吸，运气也会被你的气势影响。',
+          '小提示：先想好赢了之后要说什么。'
+        ]
+      };
+
+      const ROOM_IDS = {
+        rps: 'pm-party-v1-5a773993-rps',
+        dice: 'pm-party-v1-5a773993-dice'
+      };
+      const GESTURES = {
+        rock: { emoji: '✊', label: '石头', beats: 'scissors' },
+        scissors: { emoji: '✌️', label: '剪刀', beats: 'paper' },
+        paper: { emoji: '🖐️', label: '布', beats: 'rock' }
+      };
+      const RPS_KEYS = ['rock', 'scissors', 'paper'];
+      const AI_FALLBACK_MS = 3000;
+      const AI_HANDSHAKE_GRACE_MS = 2500;
+      const AI_ENTRY_DELAY_MS = 1200;
+      const AI_ENTRY_EXTEND_MS = 1800;
+
+      const pad = (n) => String(n).padStart(2, '0');
+      const formatTime = (totalSeconds) => pad(Math.floor(totalSeconds / 60)) + ':' + pad(totalSeconds % 60);
+      const randomInt = (min, max) => min + Math.floor(Math.random() * (max - min + 1));
+      const randDie = () => randomInt(1, 6);
+
+      const normalizeProfile = (profile) => {
+        const source = profile && typeof profile === 'object' ? profile : {};
+        const name = typeof source.name === 'string' ? source.name.trim() : '';
+        const rank = typeof source.rank === 'string' ? source.rank.trim() : '';
+        const avatar = typeof source.avatar === 'string' ? source.avatar.trim() : '';
+        return {
+          name: name ? name.slice(0, 16) : '神秘玩家',
+          rank: rank ? rank.slice(0, 10) : '青铜 I',
+          avatar: avatar ? avatar.slice(0, 4) : '🎭'
+        };
+      };
+
+      const makeAIProfile = () => ({
+        name: pick(AI_NAMES),
+        rank: pick(RANKS),
+        avatar: pick(AVATARS)
+      });
+
+      const judgeRPS = (a, b) => {
+        if (a === b) return 'tie';
+        return GESTURES[a] && GESTURES[a].beats === b ? 'host' : 'guest';
+      };
+
+      const aiPickRPS = (playerPick) => {
+        const beatsPlayer = RPS_KEYS.find((key) => GESTURES[key].beats === playerPick) || pick(RPS_KEYS);
+        const losesToPlayer = GESTURES[playerPick] ? GESTURES[playerPick].beats : pick(RPS_KEYS);
+        return Math.random() < AI_WIN_RATE ? beatsPlayer : losesToPlayer;
+      };
+      const aiDiceCount = () => {
+        const roll = Math.random();
+        return roll < 0.5 ? 1 : roll < 0.85 ? 2 : 3;
+      };
+      const sumDice = (rolls) => rolls.reduce((total, value) => total + value, 0);
+      const clampDiceCount = (value) => clampInt(value, 1, 3, 2);
+
+      document.querySelectorAll('[data-match]').forEach(setupLobby);
+
+      function setupLobby(root) {
+        const mode = root.dataset.match;
+        const tips = TIPS[mode] || [''];
+
+        const el = {
+          idle: root.querySelector('[data-lobby="idle"]'),
+          search: root.querySelector('[data-lobby="searching"]'),
+          battle: root.querySelector('[data-lobby="battle"]'),
+          start: root.querySelector('[data-action="start"]'),
+          cancel: root.querySelector('[data-action="cancel"]'),
+          timer: root.querySelector('[data-timer]'),
+          tip: root.querySelector('[data-tip]'),
+          roomLabel: root.querySelector('[data-room-label]'),
+          connState: root.querySelector('[data-conn-state]')
+        };
+
+        const battleEl = {
+          myAvatar: root.querySelector('[data-battle="my-avatar"]'),
+          myName: root.querySelector('[data-battle="my-name"]'),
+          myRank: root.querySelector('[data-battle="my-rank"]'),
+          myChoice: root.querySelector('[data-battle="my-choice"]'),
+          myScore: root.querySelector('[data-battle="my-score"]'),
+          oppAvatar: root.querySelector('[data-battle="opp-avatar"]'),
+          oppName: root.querySelector('[data-battle="opp-name"]'),
+          oppRank: root.querySelector('[data-battle="opp-rank"]'),
+          oppChoice: root.querySelector('[data-battle="opp-choice"]'),
+          oppScore: root.querySelector('[data-battle="opp-score"]'),
+          roundLabel: root.querySelector('[data-battle="round-label"]'),
+          orb: root.querySelector('[data-battle="orb"]'),
+          status: root.querySelector('[data-battle="status"]'),
+          actions: root.querySelector('[data-battle="actions"]'),
+          resultActions: root.querySelector('[data-battle="result-actions"]'),
+          rematch: root.querySelector('[data-battle="rematch"]'),
+          exit: root.querySelector('[data-battle="exit"]')
+        };
+
+        const pickButtons = Array.from(root.querySelectorAll('[data-rps-pick]'));
+        const confirmButton = root.querySelector('[data-rps-confirm]');
+        const rollButton = root.querySelector('[data-dice-roll]');
+        const countButtons = Array.from(root.querySelectorAll('[data-dice-count]'));
+        const actionButtons = Array.from(battleEl.actions.querySelectorAll('button'));
+
+        let session = null;
+        let game = null;
+        const diceTumbleTimers = new WeakMap();
+
+        /* ----- 视图与顶部状态 ----- */
+        function showView(name) {
+          el.idle.classList.toggle('is-hidden', name !== 'idle');
+          el.search.classList.toggle('is-hidden', name !== 'searching');
+          el.battle.classList.toggle('is-hidden', name !== 'battle');
+        }
+
+        function setHeader(label, state) {
+          if (el.roomLabel) el.roomLabel.textContent = label;
+          if (el.connState) el.connState.textContent = state;
+        }
+
+        /* ----- 匹配搜索 ----- */
+        function beginSearch() {
+          if (session || game) return;
+
+          showView('searching');
+          setHeader('匹配大厅', '服务在线');
+
+          const s = {
+            done: false,
+            roomId: ROOM_IDS[mode],
+            peers: [],
+            hostPeer: null,
+            hostOpen: false,
+            hostTaken: false,
+            guestPeer: null,
+            guestOpen: false,
+            guestConn: null,
+            incomingConn: null,
+            retryTimer: null,
+            tickId: null,
+            tipId: null,
+            aiTimeout: null,
+            aiEntryTimer: null,
+            aiEntryExtended: false
+          };
+          session = s;
+
+          let elapsed = 0;
+          let tipIndex = 0;
+          el.timer.textContent = '00:00';
+          el.tip.textContent = tips[0];
+
+          s.tickId = setInterval(() => {
+            elapsed += 1;
+            el.timer.textContent = formatTime(elapsed);
+          }, 1000);
+          s.tipId = setInterval(() => {
+            tipIndex = (tipIndex + 1) % tips.length;
+            el.tip.textContent = tips[tipIndex];
+          }, 4500);
+
+          /* AI 兜底：3 秒内未找到真实玩家，自动切换 AI 陪练 */
+          s.aiTimeout = setTimeout(() => fallbackToAI(s), AI_FALLBACK_MS);
+
+          startPeerSearch(s);
+        }
+
+        function stopSearchTimers(s) {
+          clearInterval(s.tickId);
+          clearInterval(s.tipId);
+          clearTimeout(s.aiTimeout);
+          clearTimeout(s.retryTimer);
+          clearTimeout(s.aiEntryTimer);
+        }
+
+        function cancelSearch() {
+          const s = session;
+          if (!s) return;
+          s.done = true;
+          stopSearchTimers(s);
+          s.peers.forEach((peer) => destroyPeer(peer));
+          session = null;
+          showView('idle');
+          setHeader('匹配大厅', '服务在线');
+        }
+
+        function startPeerSearch(s) {
+          if (typeof Peer === 'undefined') return;
+          openHostPeer(s);
+          openGuestPeer(s);
+        }
+
+        /* 抢占公共房间；被占用则转为访客 */
+        function openHostPeer(s) {
+          let host;
+          try {
+            host = new Peer(s.roomId, { debug: 0 });
+          } catch (error) {
+            return;
+          }
+
+          s.hostPeer = host;
+          s.peers.push(host);
+
+          host.on('open', () => {
+            if (s.done) return;
+            s.hostOpen = true;
+            if (s.guestPeer) destroyPeer(s.guestPeer);
+          });
+
+          host.on('error', (error) => {
+            if (s.done) return;
+            if (!error || error.type !== 'unavailable-id') return;
+            s.hostTaken = true;
+            destroyPeer(host);
+            el.tip.textContent = '发现匹配房间，正在建立连接…';
+            el.connState.textContent = '正在连接';
+            extendForHandshake(s);
+            tryGuestConnect(s);
+          });
+
+          host.on('connection', (conn) => {
+            if (s.done) {
+              try { conn.close(); } catch (error) {}
+              return;
+            }
+            if (s.incomingConn) {
+              try { conn.close(); } catch (error) {}
+              return;
+            }
+            s.incomingConn = conn;
+            if (s.aiEntryTimer) {
+              extendAIEntry(s);
+              el.tip.textContent = '发现真实玩家，正在建立连接…';
+              el.connState.textContent = '正在连接';
+            }
+
+            conn.on('data', (message) => {
+              if (s.done || !message || message.t !== 'hello') return;
+              if (message.sid && message.sid === MY_SID) {
+                try { conn.close(); } catch (error) {}
+                s.incomingConn = null;
+                return;
+              }
+              try { conn.send({ t: 'welcome', profile: myPublicProfile() }); } catch (error) {}
+              foundMatch(s, 'host', normalizeProfile(message.profile), conn, s.hostPeer);
+            });
+            conn.on('close', () => {
+              if (!s.done) s.incomingConn = null;
+            });
+            conn.on('error', () => {
+              if (!s.done) s.incomingConn = null;
+            });
+
+            setTimeout(() => {
+              if (!s.done && s.incomingConn === conn) {
+                try { conn.close(); } catch (error) {}
+                s.incomingConn = null;
+              }
+            }, 1500);
+          });
+        }
+
+        /* 访客探针与房间抢占并行启动，省去“发现被占后再建新 peer”的等待 */
+        function openGuestPeer(s) {
+          let guest;
+          try {
+            guest = new Peer({ debug: 0 });
+          } catch (error) {
+            return;
+          }
+
+          s.guestPeer = guest;
+          s.peers.push(guest);
+
+          guest.on('open', () => {
+            if (s.done) return;
+            s.guestOpen = true;
+            if (s.hostOpen) {
+              destroyPeer(guest);
+              return;
+            }
+            tryGuestConnect(s);
+          });
+        }
+
+        function tryGuestConnect(s) {
+          if (s.done || s.hostOpen || !s.guestOpen || !s.guestPeer) return;
+          if (s.guestConn) return;
+
+          let conn;
+          try {
+            conn = s.guestPeer.connect(s.roomId, { reliable: true });
+          } catch (error) {
+            scheduleGuestRetry(s);
+            return;
+          }
+
+          s.guestConn = conn;
+          let welcomed = false;
+
+          const fail = () => {
+            if (welcomed || s.done) return;
+            clearTimeout(watchdog);
+            if (s.guestConn === conn) s.guestConn = null;
+            scheduleGuestRetry(s);
+          };
+
+          const watchdog = setTimeout(() => {
+            if (welcomed || s.done || conn.open) return;
+            try { conn.close(); } catch (error) {}
+            fail();
+          }, 2200);
+
+          conn.on('open', () => {
+            if (s.done || welcomed) return;
+            try { conn.send({ t: 'hello', profile: myPublicProfile(), sid: MY_SID }); } catch (error) {}
+          });
+          conn.on('data', (message) => {
+            if (s.done || welcomed || !message) return;
+            if (message.t === 'welcome') {
+              welcomed = true;
+              clearTimeout(watchdog);
+              foundMatch(s, 'guest', normalizeProfile(message.profile), conn, s.guestPeer);
+            }
+          });
+          conn.on('error', fail);
+          conn.on('close', fail);
+        }
+
+        function scheduleGuestRetry(s) {
+          if (s.done || s.retryTimer) return;
+          s.retryTimer = setTimeout(() => {
+            s.retryTimer = null;
+            if (s.done) return;
+            tryGuestConnect(s);
+          }, 350);
+        }
+
+        /* 已发现真实房间时，给 WebRTC 握手一个短暂窗口 */
+        function extendForHandshake(s) {
+          if (s.done) return;
+          clearTimeout(s.aiTimeout);
+          s.aiTimeout = setTimeout(() => fallbackToAI(s), AI_HANDSHAKE_GRACE_MS);
+        }
+
+        function foundMatch(s, role, profile, conn, peer) {
+          if (s.done) return;
+          s.done = true;
+          stopSearchTimers(s);
+          destroyPeersExcept(s, peer);
+          session = null;
+          startGame(role, profile, conn, peer);
+        }
+
+        /* 3 秒兜底触发后留一小段入场缓冲，让已在握手中的真实玩家完成接入 */
+        function fallbackToAI(s) {
+          if (s.done || s.aiEntryTimer) return;
+          clearTimeout(s.aiTimeout);
+          el.tip.textContent = 'AI 陪练已就位，正在进入对战…';
+          el.connState.textContent = 'AI 陪练';
+          s.aiEntryTimer = setTimeout(() => completeAIFallback(s), AI_ENTRY_DELAY_MS);
+        }
+
+        function completeAIFallback(s) {
+          if (s.done) return;
+          s.done = true;
+          stopSearchTimers(s);
+          s.peers.forEach((peer) => destroyPeer(peer));
+          session = null;
+          startGame('ai', makeAIProfile(), null, null);
+        }
+
+        function extendAIEntry(s) {
+          if (s.done || s.aiEntryExtended || !s.aiEntryTimer) return;
+          s.aiEntryExtended = true;
+          clearTimeout(s.aiEntryTimer);
+          s.aiEntryTimer = setTimeout(() => completeAIFallback(s), AI_ENTRY_EXTEND_MS);
+        }
+
+        function destroyPeer(peer) {
+          if (!peer) return;
+          try { peer.destroy(); } catch (error) {}
+        }
+
+        function destroyPeersExcept(s, keep) {
+          s.peers.forEach((peer) => {
+            if (peer && peer !== keep) destroyPeer(peer);
+          });
+          s.peers = s.peers.filter((peer) => peer === keep);
+        }
+
+        /* ----- 对战 ----- */
+        function startGame(role, opponent, conn, peer) {
+          if (game) return;
+
+          game = {
+            role,
+            conn,
+            peer,
+            opp: normalizeProfile(opponent),
+            myScore: 0,
+            oppScore: 0,
+            round: 1,
+            overtime: false,
+            myReady: false,
+            oppReady: false,
+            myValue: null,
+            oppValue: null,
+            diceCount: 2,
+            oppDiceCount: null,
+            rankApplied: false,
+            rankText: '',
+            phase: 'init',
+            timers: {}
+          };
+
+          showView('battle');
+          setHeader('对战房间', role === 'ai' ? 'AI 陪练' : 'P2P 联机');
+
+          battleEl.myAvatar.textContent = MY_PROFILE.avatar;
+          battleEl.myName.textContent = MY_PROFILE.name;
+          battleEl.myRank.textContent = MY_PROFILE.rank + ' · ★' + MY_PROFILE.stars;
+          battleEl.oppAvatar.textContent = game.opp.avatar;
+          battleEl.oppName.textContent = game.opp.name;
+          battleEl.oppRank.textContent = game.opp.rank;
+          battleEl.rematch.classList.remove('is-hidden');
+          battleEl.resultActions.classList.add('is-hidden');
+          battleEl.actions.classList.remove('is-hidden');
+          resetChoices();
+          resetActions();
+          disableActions();
+          updateScores();
+          setOrb('VS', 'is-vs');
+          battleEl.status.textContent = '匹配成功，准备开战…';
+
+          if (conn) {
+            conn.on('data', role === 'host' ? handleHostData : handleGuestData);
+            conn.on('close', () => handleDisconnect('对手已离开房间'));
+            conn.on('error', () => {});
+          }
+
+          playVsIntro(MY_PROFILE, game.opp);
+          game.timers.vs = setTimeout(() => {
+            if (!game) return;
+            delete game.timers.vs;
+            beginRound(1, false);
+          }, VS_COUNTDOWN_MS);
+        }
+
+        function beginRound(round, overtime) {
+          if (!game) return;
+          clearBattleTimers();
+
+          game.round = round;
+          game.overtime = Boolean(overtime);
+          game.myReady = false;
+          game.oppReady = false;
+          game.myValue = null;
+          game.oppValue = null;
+          game.oppDiceCount = null;
+          game.diceTotals = null;
+          game.phase = 'countdown';
+
+          battleEl.actions.classList.remove('is-hidden');
+          battleEl.resultActions.classList.add('is-hidden');
+          resetChoices();
+          resetActions();
+          disableActions();
+          updateScores();
+
+          battleEl.roundLabel.textContent = mode === 'rps'
+            ? '第 ' + round + ' 局'
+            : (game.overtime ? '加时赛' : '一局定胜负');
+          battleEl.status.textContent = '准备好了吗？';
+          setOrb('3');
+
+          let count = 3;
+          game.timers.countdown = setInterval(() => {
+            if (!game) return;
+            count -= 1;
+            if (count > 0) {
+              setOrb(String(count));
+              battleEl.status.textContent = '准备…';
+            } else {
+              clearInterval(game.timers.countdown);
+              delete game.timers.countdown;
+              enterChoosePhase();
+            }
+          }, 640);
+        }
+
+        function enterChoosePhase() {
+          if (!game) return;
+          game.phase = 'choose';
+          setOrb('VS', 'is-vs');
+          battleEl.status.textContent = mode === 'rps'
+            ? '先选手势，再确认出拳'
+            : '选择骰子数量，再掷出';
+          resetActions();
+
+          if (game.role === 'host' && game.oppReady) maybeResolve();
+        }
+
+        function onPick(value) {
+          if (!game || game.phase !== 'choose' || game.myReady || !GESTURES[value]) return;
+
+          game.myValue = value;
+          pickButtons.forEach((button) => {
+            button.classList.toggle('is-picked', button.dataset.rpsPick === value);
+          });
+          setChoiceValue(battleEl.myChoice, GESTURES[value].emoji, false);
+          if (confirmButton) {
+            confirmButton.disabled = false;
+            confirmButton.textContent = '确认出拳';
+          }
+          battleEl.status.textContent = '已选' + GESTURES[value].label + '，确认出拳？';
+        }
+
+        function confirmPick() {
+          if (!game || game.phase !== 'choose' || game.myReady || !GESTURES[game.myValue]) return;
+
+          game.myReady = true;
+          disableActions();
+          if (confirmButton) confirmButton.textContent = '已确认';
+          setChoiceValue(battleEl.myChoice, GESTURES[game.myValue].emoji, true);
+          battleEl.status.textContent = game.role === 'guest'
+            ? '已确认，等待对手…'
+            : '已确认，等待对手确认…';
+
+          if (game.role === 'ai') {
+            battleEl.status.textContent = '已确认，AI 正在思考…';
+            scheduleAI();
+          } else {
+            sendGame({ t: 'pick', v: game.myValue });
+            if (game.role === 'host') maybeResolve();
+          }
+        }
+
+        function onDiceCount(count) {
+          if (!game || game.phase !== 'choose' || game.myReady) return;
+          game.diceCount = clampDiceCount(count);
+          countButtons.forEach((button) => {
+            const active = Number(button.dataset.diceCount) === game.diceCount;
+            button.classList.toggle('is-active', active);
+            button.setAttribute('aria-pressed', String(active));
+          });
+          setDicePending(battleEl.myChoice, game.diceCount);
+          battleEl.status.textContent = '已选 ' + game.diceCount + ' 颗骰子，掷出吧！';
+        }
+
+        function onRoll() {
+          if (!game || game.phase !== 'choose' || game.myReady) return;
+
+          game.myReady = true;
+          disableActions();
+          setDicePending(battleEl.myChoice, game.diceCount);
+          playDiceTumble(battleEl.myChoice, 700);
+          battleEl.status.textContent = game.role === 'guest'
+            ? '已锁定 ' + game.diceCount + ' 颗，等待对手…'
+            : '已锁定 ' + game.diceCount + ' 颗，等待揭晓…';
+
+          if (game.role === 'ai') {
+            battleEl.status.textContent = '已锁定 ' + game.diceCount + ' 颗，AI 正在掷…';
+            scheduleAI();
+          } else {
+            sendGame({ t: 'roll', dice: game.diceCount });
+            if (game.role === 'host') maybeResolve();
+          }
+        }
+
+        function disableActions() {
+          actionButtons.forEach((button) => { button.disabled = true; });
+        }
+
+        function resetActions() {
+          actionButtons.forEach((button) => {
+            button.disabled = false;
+            button.classList.remove('is-picked');
+          });
+          if (confirmButton) {
+            confirmButton.disabled = true;
+            confirmButton.textContent = '确认出拳';
+          }
+          if (mode === 'dice') {
+            game.diceCount = 2;
+            countButtons.forEach((button) => {
+              const active = button.dataset.diceCount === '2';
+              button.classList.toggle('is-active', active);
+              button.setAttribute('aria-pressed', String(active));
+            });
+            setDicePending(battleEl.myChoice, game.diceCount);
+          }
+        }
+
+        function maybeResolve() {
+          if (!game || game.phase !== 'choose' || !game.myReady || !game.oppReady) return;
+          game.phase = 'resolving';
+          disableActions();
+          battleEl.status.textContent = '即将揭晓…';
+          game.timers.reveal = setTimeout(hostResolve, 450);
+        }
+
+        function hostResolve() {
+          if (!game || game.phase !== 'resolving') return;
+
+          const payload = { t: 'reveal', mode, round: game.round, overtime: game.overtime };
+
+          if (mode === 'rps') {
+            if (!GESTURES[game.myValue]) game.myValue = pick(RPS_KEYS);
+            if (!GESTURES[game.oppValue]) game.oppValue = pick(RPS_KEYS);
+            const outcome = judgeRPS(game.myValue, game.oppValue);
+            if (outcome === 'host') game.myScore += 1;
+            else if (outcome === 'guest') game.oppScore += 1;
+            const matchOver = game.myScore >= 2 || game.oppScore >= 2;
+            Object.assign(payload, {
+              hostPick: game.myValue,
+              guestPick: game.oppValue,
+              hostScore: game.myScore,
+              guestScore: game.oppScore,
+              outcome,
+              matchOver
+            });
+          } else {
+            const hostCount = clampDiceCount(game.diceCount);
+            const guestCount = clampDiceCount(game.oppDiceCount);
+            const hostRolls = Array.from({ length: hostCount }, randDie);
+            const guestRolls = Array.from({ length: guestCount }, randDie);
+            const hostTotal = sumDice(hostRolls);
+            const guestTotal = sumDice(guestRolls);
+            const outcome = hostTotal === guestTotal ? 'tie' : hostTotal > guestTotal ? 'host' : 'guest';
+            if (outcome === 'host') game.myScore = 1;
+            else if (outcome === 'guest') game.oppScore = 1;
+            Object.assign(payload, {
+              hostDice: hostCount,
+              guestDice: guestCount,
+              hostRolls,
+              guestRolls,
+              hostTotal,
+              guestTotal,
+              hostScore: game.myScore,
+              guestScore: game.oppScore,
+              outcome,
+              matchOver: outcome !== 'tie'
+            });
+          }
+
+          sendGame(payload);
+          applyReveal(payload, 'host');
+        }
+
+        function applyReveal(payload, perspective) {
+          if (!game) return;
+          clearBattleTimers();
+          game.phase = 'reveal';
+
+          const asHost = perspective === 'host';
+          game.myScore = asHost ? payload.hostScore : payload.guestScore;
+          game.oppScore = asHost ? payload.guestScore : payload.hostScore;
+          updateScores();
+
+          if (mode === 'rps') {
+            const myPick = asHost ? payload.hostPick : payload.guestPick;
+            const oppPick = asHost ? payload.guestPick : payload.hostPick;
+            setChoiceValue(battleEl.myChoice, GESTURES[myPick] ? GESTURES[myPick].emoji : '❔', true);
+            setChoiceValue(battleEl.oppChoice, GESTURES[oppPick] ? GESTURES[oppPick].emoji : '❔', true);
+          } else {
+            const myRolls = asHost ? payload.hostRolls : payload.guestRolls;
+            const oppRolls = asHost ? payload.guestRolls : payload.hostRolls;
+            const safeMyRolls = Array.isArray(myRolls) ? myRolls : [];
+            const safeOppRolls = Array.isArray(oppRolls) ? oppRolls : [];
+            const myTotal = sumDice(safeMyRolls);
+            const oppTotal = sumDice(safeOppRolls);
+            setDiceValues(battleEl.myChoice, safeMyRolls);
+            setDiceValues(battleEl.oppChoice, safeOppRolls);
+            game.diceTotals = { my: myTotal, opp: oppTotal };
+          }
+
+          let myOutcome = 'tie';
+          if (payload.outcome !== 'tie') {
+            myOutcome = ((payload.outcome === 'host') === asHost) ? 'me' : 'opp';
+          }
+
+          if (myOutcome === 'me') {
+            setOrb('🎉', 'is-win');
+            battleEl.status.textContent = mode === 'rps'
+              ? '这一局你赢了！'
+              : '你 ' + game.diceTotals.my + ' : ' + game.diceTotals.opp + ' 对手，赢了！';
+          } else if (myOutcome === 'opp') {
+            setOrb('💥');
+            battleEl.status.textContent = mode === 'rps'
+              ? '这一局对手赢了'
+              : '你 ' + game.diceTotals.my + ' : ' + game.diceTotals.opp + ' 对手，这局输了';
+          } else {
+            setOrb('🤝');
+            battleEl.status.textContent = mode === 'rps'
+              ? '平局，再来一局！'
+              : '你 ' + game.diceTotals.my + ' : ' + game.diceTotals.opp + ' 对手，加时！';
+          }
+
+          battleEl.actions.classList.add('is-hidden');
+
+          if (payload.matchOver) {
+            game.phase = 'over';
+            if (!game.rankApplied) {
+              game.rankApplied = true;
+              const won = game.myScore > game.oppScore;
+              const result = recordMatchResult(won);
+              if (result.promoted) {
+                game.rankText = '🎉 晋级成功：' + result.rank;
+                showStarToast('🎉 晋级成功 · ' + result.rank + '！');
+              } else if (result.capped) {
+                game.rankText = '⭐ 已达最高段位';
+                showStarToast('⭐ 已达最高段位 · ' + result.rank);
+              } else if (result.floor) {
+                game.rankText = '★ 保底 · ' + result.stars + '/' + STARS_PER_RANK;
+                showStarToast('★ 已保底 · ' + result.stars + '/' + STARS_PER_RANK);
+              } else {
+                game.rankText = '★ ' + (result.delta > 0 ? '+1' : '-1') + ' · ' + result.stars + '/' + STARS_PER_RANK;
+                showStarToast('★ ' + (result.delta > 0 ? '+1' : '-1') + ' 星 · ' + result.stars + '/' + STARS_PER_RANK);
+              }
+            }
+            game.timers.result = setTimeout(showMatchResult, 900);
+          } else if (game.role !== 'guest') {
+            const nextRound = myOutcome === 'tie' ? game.round : game.round + 1;
+            const nextOvertime = mode === 'dice' && myOutcome === 'tie';
+            game.timers.next = setTimeout(() => {
+              if (!game || game.phase !== 'reveal') return;
+              if (game.role === 'host') sendGame({ t: 'next', round: nextRound, overtime: nextOvertime });
+              beginRound(nextRound, nextOvertime);
+            }, 1600);
+          } else {
+            battleEl.status.textContent += ' 等待下一局…';
+          }
+        }
+
+        function showMatchResult() {
+          if (!game) return;
+          const won = game.myScore > game.oppScore;
+          game.phase = 'over';
+          setOrb(won ? '🏆' : '💔', won ? 'is-win' : '');
+          battleEl.status.textContent = (won ? '胜利！ ' : '惜败！ ') + (game.rankText || '');
+          if (!game.rankText) battleEl.status.textContent = won ? '你赢下了整场对战！' : '惜败，再来一局？';
+          battleEl.actions.classList.add('is-hidden');
+          battleEl.rematch.classList.remove('is-hidden');
+          battleEl.resultActions.classList.remove('is-hidden');
+        }
+
+        function scheduleAI() {
+          if (!game || game.role !== 'ai' || game.phase !== 'choose' || game.oppReady) return;
+          if (mode === 'rps' && !GESTURES[game.myValue]) return;
+          if (mode === 'dice' && !game.myReady) return;
+          game.timers.ai = setTimeout(() => {
+            if (!game || game.phase !== 'choose' || game.oppReady) return;
+            if (mode === 'rps') {
+              game.oppValue = aiPickRPS(game.myValue);
+            } else {
+              game.oppDiceCount = aiDiceCount();
+            }
+            game.oppReady = true;
+            maybeResolve();
+          }, randomInt(550, 1200));
+        }
+
+        function onRematch() {
+          if (!game || game.phase !== 'over') return;
+          if (game.role !== 'ai') sendGame({ t: 'rematch' });
+          resetMatch();
+        }
+
+        function resetMatch() {
+          if (!game) return;
+          clearBattleTimers();
+          game.myScore = 0;
+          game.oppScore = 0;
+          game.overtime = false;
+          game.rankApplied = false;
+          game.rankText = '';
+          game.diceTotals = null;
+          battleEl.resultActions.classList.add('is-hidden');
+          battleEl.rematch.classList.remove('is-hidden');
+          battleEl.actions.classList.remove('is-hidden');
+          updateScores();
+          beginRound(1, false);
+        }
+
+        function exitBattle() {
+          if (!game) return;
+          const activeConn = game.conn;
+          const activePeer = game.peer;
+          clearBattleTimers();
+          hideVsIntro();
+
+          if (activeConn) {
+            try { activeConn.send({ t: 'bye' }); } catch (error) {}
+            try { activeConn.close(); } catch (error) {}
+          }
+          destroyPeer(activePeer);
+          game = null;
+
+          showView('idle');
+          setHeader('匹配大厅', '服务在线');
+          battleEl.resultActions.classList.add('is-hidden');
+          battleEl.actions.classList.remove('is-hidden');
+          battleEl.rematch.classList.remove('is-hidden');
+          resetChoices();
+          updateScores();
+          setOrb('VS', 'is-vs');
+          battleEl.status.textContent = '准备…';
+        }
+
+        function handleDisconnect(message) {
+          if (!game || game.phase === 'disconnected') return;
+          clearBattleTimers();
+          hideVsIntro();
+          game.phase = 'disconnected';
+          disableActions();
+          setOrb('💨');
+          battleEl.status.textContent = message;
+          battleEl.actions.classList.add('is-hidden');
+          battleEl.rematch.classList.add('is-hidden');
+          battleEl.resultActions.classList.remove('is-hidden');
+          setHeader('对战房间', '连接已断开');
+        }
+
+        function handleHostData(message) {
+          if (!game || !message) return;
+          if (message.t === 'pick' && GESTURES[message.v]) {
+            if (game.oppReady || (game.phase !== 'choose' && game.phase !== 'countdown')) return;
+            game.oppValue = message.v;
+            game.oppReady = true;
+            if (game.phase === 'choose') maybeResolve();
+          } else if (message.t === 'roll') {
+            if (game.oppReady || (game.phase !== 'choose' && game.phase !== 'countdown')) return;
+            game.oppDiceCount = clampDiceCount(message.dice);
+            game.oppReady = true;
+            if (game.phase === 'choose') maybeResolve();
+          } else if (message.t === 'rematch') {
+            if (game.phase === 'over') resetMatch();
+          } else if (message.t === 'bye') {
+            handleDisconnect('对手已离开房间');
+          }
+        }
+
+        function handleGuestData(message) {
+          if (!game || !message) return;
+          if (message.t === 'reveal') {
+            applyReveal(message, 'guest');
+          } else if (message.t === 'next') {
+            beginRound(message.round, message.overtime);
+          } else if (message.t === 'rematch') {
+            if (game.phase === 'over') resetMatch();
+          } else if (message.t === 'bye') {
+            handleDisconnect('对手已离开房间');
+          }
+        }
+
+        function sendGame(payload) {
+          if (!game || !game.conn || !game.conn.open) return;
+          try { game.conn.send(payload); } catch (error) {}
+        }
+
+        function clearBattleTimers() {
+          if (!game) return;
+          Object.values(game.timers).forEach((timer) => {
+            clearTimeout(timer);
+            clearInterval(timer);
+          });
+          game.timers = {};
+        }
+
+        function updateScores() {
+          battleEl.myScore.textContent = game ? game.myScore : 0;
+          battleEl.oppScore.textContent = game ? game.oppScore : 0;
+        }
+
+        function setOrb(text, extra) {
+          battleEl.orb.className = 'battle-orb';
+          void battleEl.orb.offsetWidth;
+          battleEl.orb.classList.add('is-pop');
+          if (extra) battleEl.orb.classList.add(extra);
+          battleEl.orb.textContent = text;
+        }
+
+        function playDiceTumble(target, duration) {
+          if (!target) return;
+          const previous = diceTumbleTimers.get(target);
+          if (previous) clearTimeout(previous);
+          target.classList.remove('is-tumbling');
+          void target.offsetWidth;
+          target.classList.add('is-tumbling');
+          diceTumbleTimers.set(target, setTimeout(() => {
+            target.classList.remove('is-tumbling');
+            diceTumbleTimers.delete(target);
+          }, duration));
+        }
+
+        function clearDiceTumble(target) {
+          if (!target) return;
+          const timer = diceTumbleTimers.get(target);
+          if (timer) clearTimeout(timer);
+          diceTumbleTimers.delete(target);
+          target.classList.remove('is-tumbling');
+        }
+
+        function setChoiceValue(target, value, reveal) {
+          target.textContent = value;
+          clearDiceTumble(target);
+          target.classList.remove('is-dice', 'is-dice-many', 'is-reveal', 'is-gesture-reveal', 'is-dice-landed');
+          if (reveal) {
+            void target.offsetWidth;
+            target.classList.add('is-reveal', 'is-gesture-reveal');
+          }
+        }
+
+        function setDicePending(target, count) {
+          clearDiceTumble(target);
+          target.textContent = '🎲×' + count;
+          target.classList.remove('is-reveal', 'is-gesture-reveal', 'is-dice-many', 'is-dice-landed');
+          target.classList.add('is-dice');
+          if (count >= 3) target.classList.add('is-dice-many');
+          target.setAttribute('aria-label', '已选择 ' + count + ' 颗骰子');
+        }
+
+        function setDiceValues(target, rolls) {
+          const values = Array.isArray(rolls) ? rolls : [];
+          clearDiceTumble(target);
+          target.textContent = values.length ? values.join('+') : '❔';
+          target.classList.remove('is-reveal', 'is-gesture-reveal', 'is-dice-many', 'is-dice-landed');
+          target.classList.add('is-dice', 'is-dice-landed');
+          if (values.length >= 3) target.classList.add('is-dice-many');
+          target.setAttribute('aria-label', values.length
+            ? '骰子 ' + values.join('、') + '，总点 ' + sumDice(values)
+            : '暂无骰子');
+          playDiceTumble(target, 800);
+        }
+
+        function resetChoices() {
+          clearDiceTumble(battleEl.myChoice);
+          clearDiceTumble(battleEl.oppChoice);
+          battleEl.myChoice.textContent = mode === 'dice' ? '🎲' : '❔';
+          battleEl.oppChoice.textContent = mode === 'dice' ? '🎲' : '❔';
+          battleEl.myChoice.classList.remove('is-reveal', 'is-gesture-reveal', 'is-dice', 'is-dice-many', 'is-dice-landed');
+          battleEl.oppChoice.classList.remove('is-reveal', 'is-gesture-reveal', 'is-dice', 'is-dice-many', 'is-dice-landed');
+          battleEl.myChoice.setAttribute('aria-label', '我的选择');
+          battleEl.oppChoice.setAttribute('aria-label', '对手的选择');
+        }
+
+        /* ----- 绑定事件 ----- */
+        el.start.addEventListener('click', beginSearch);
+        el.cancel.addEventListener('click', cancelSearch);
+        pickButtons.forEach((button) => {
+          button.addEventListener('click', () => onPick(button.dataset.rpsPick));
+        });
+        if (confirmButton) confirmButton.addEventListener('click', confirmPick);
+        countButtons.forEach((button) => {
+          button.addEventListener('click', () => onDiceCount(Number(button.dataset.diceCount)));
+        });
+        if (rollButton) rollButton.addEventListener('click', onRoll);
+        battleEl.rematch.addEventListener('click', onRematch);
+        battleEl.exit.addEventListener('click', exitBattle);
+      }
+    })();
+  </script>
+  <script>
+    (() => {
+      'use strict';
+
+      const wheel = document.querySelector('[data-truth-wheel]');
+      const labels = document.querySelector('[data-wheel-labels]');
+      const panel = document.getElementById('panel-truth');
+      const spinButton = document.querySelector('[data-truth-spin]');
+      const spinLabel = document.querySelector('[data-truth-spin-label]');
+      const status = document.querySelector('[data-truth-status]');
+      const modal = document.querySelector('[data-truth-modal]');
+      const modalCard = document.querySelector('[data-truth-card]');
+      if (!wheel || !labels || !panel || !spinButton || !modal || !modalCard) return;
+
+      const modalIcon = modal.querySelector('[data-truth-icon]');
+      const modalKicker = modal.querySelector('[data-truth-kicker]');
+      const modalTitle = modal.querySelector('[data-truth-title]');
+      const modalPrompt = modal.querySelector('[data-truth-prompt]');
+      const againButton = modal.querySelector('[data-truth-again]');
+      const acceptButton = modal.querySelector('[data-truth-accept]');
+      const closeButton = modal.querySelector('[data-truth-close]');
+
+      const SECTOR_COUNT = 8;
+      const SECTOR_ANGLE = 360 / SECTOR_COUNT;
+      const SPIN_TURNS_MIN = 5;
+      const SPIN_TURNS_MAX = 7;
+      const SPIN_MS = 5200;
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+      const SEGMENTS = Array.from({ length: SECTOR_COUNT }, (_, index) => ({
+        type: index % 2 === 0 ? 'truth' : 'dare'
+      }));
+
+      const PROMPTS = {
+        truth: [
+          '你手机里最舍不得删的一张照片是什么？描述一下画面。',
+          '最近一次让你偷偷开心的小事是什么？',
+          '你做过最“社死”的一件事是什么？',
+          '如果现在能立刻学会一项技能，你会选什么？为什么？',
+          '在场的人里，你觉得谁最像“派对气氛组”？说说理由。',
+          '你小时候最离谱的梦想是什么？',
+          '你最近单曲循环的是哪首歌？敢不敢现场唱两句。',
+          '如果明天放假一天，但不能碰手机，你会怎么过？',
+          '你最近一次被治愈或被打动的瞬间是什么？',
+          '如果可以给一年后的自己留一句话，你会说什么？'
+        ],
+        dare: [
+          '用最夸张的播音腔，夸在场任意一个人 15 秒。',
+          '模仿一种动物的叫声，直到有人猜对为止。',
+          '打开表情包库，用最近一张表情包形容你现在的心情。',
+          '用三种不同语气说“我真的没有撒谎”，让大家投票哪次最像真的。',
+          '原地摆一个你最自信的姿势，坚持 10 秒不能笑。',
+          '用反方向说出自己的名字，再原地转一圈。',
+          '对着镜头做 5 秒最夸张的鬼脸，不能笑场。',
+          '用方言或夹子音说一句：“欢迎来到派对大玩家！”',
+          '真诚地夸奖自己三句，不能重复也不能停顿超过 3 秒。',
+          '单脚站立 15 秒，期间任何人逗你都不能笑。'
+        ]
+      };
+
+      const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+      const pick = (list) => list[Math.floor(Math.random() * list.length)];
+
+      labels.innerHTML = SEGMENTS.map((segment, index) => {
+        const angle = index * SECTOR_ANGLE + SECTOR_ANGLE / 2;
+        const tag = segment.type === 'truth' ? '💬 真心话' : '🔥 大冒险';
+        return '<div class="wheel-label" style="--angle:' + angle + 'deg">'
+          + '<span class="wheel-tag wheel-tag--' + segment.type + '" style="--counter:-' + angle + 'deg">'
+          + tag
+          + '</span></div>';
+      }).join('');
+
+      let rotation = 0;
+      let spinning = false;
+      let spinTimer = 0;
+      let pendingType = null;
+      let lastPrompt = '';
+
+      function pickPrompt(type) {
+        const pool = PROMPTS[type];
+        let prompt = pick(pool);
+        for (let attempt = 0; attempt < 4 && prompt === lastPrompt; attempt += 1) {
+          prompt = pick(pool);
+        }
+        lastPrompt = prompt;
+        return prompt;
+      }
+
+      function setBusyState(active) {
+        spinButton.disabled = active;
+        spinButton.setAttribute('aria-busy', String(active));
+        spinLabel.textContent = active ? '转动中…' : '再转一次';
+        if (active) status.textContent = '命运正在旋转，屏住呼吸…';
+      }
+
+      function spin() {
+        if (spinning) return;
+        spinning = true;
+        pendingType = null;
+        setBusyState(true);
+
+        const targetIndex = randomInt(0, SECTOR_COUNT - 1);
+        const targetCenter = targetIndex * SECTOR_ANGLE + SECTOR_ANGLE / 2;
+        const jitter = randomInt(-14, 14);
+        const desiredMod = (360 - targetCenter - jitter + 720) % 360;
+        const currentMod = ((rotation % 360) + 360) % 360;
+        const delta = (desiredMod - currentMod + 360) % 360;
+        const turns = randomInt(SPIN_TURNS_MIN, SPIN_TURNS_MAX);
+        rotation += turns * 360 + delta;
+
+        wheel.dataset.sector = String(targetIndex);
+        wheel.dataset.category = SEGMENTS[targetIndex].type;
+
+        const duration = reduceMotion.matches ? 40 : SPIN_MS;
+        wheel.style.transitionDuration = duration + 'ms';
+        wheel.style.transform = 'rotate(' + rotation + 'deg)';
+
+        clearTimeout(spinTimer);
+        spinTimer = window.setTimeout(() => finishSpin(targetIndex), duration + 80);
+      }
+
+      function finishSpin(index) {
+        if (!spinning) return;
+        spinning = false;
+        clearTimeout(spinTimer);
+        spinTimer = 0;
+
+        const segment = SEGMENTS[index] || SEGMENTS[0];
+        setBusyState(false);
+
+        if (panel.classList.contains('is-hidden')) {
+          pendingType = segment.type;
+          status.textContent = '转盘已停下，回到本页查看结果';
+          return;
+        }
+
+        status.textContent = '结果已揭晓，看看命运的安排';
+        openResult(segment.type);
+      }
+
+      function openResult(type) {
+        const isDare = type === 'dare';
+        modalCard.classList.toggle('is-dare', isDare);
+        modalIcon.textContent = isDare ? '🔥' : '💬';
+        modalKicker.textContent = (isDare ? 'DARE' : 'TRUTH') + ' · 命运选中了你';
+        modalTitle.textContent = isDare ? '大冒险' : '真心话';
+        modalPrompt.textContent = pickPrompt(type);
+
+        if (modal.open) modal.close();
+        spinButton.focus({ preventScroll: true });
+        modal.showModal();
+      }
+
+      function revealPending() {
+        if (!pendingType || panel.classList.contains('is-hidden')) return;
+        const type = pendingType;
+        pendingType = null;
+        openResult(type);
+      }
+
+      wheel.addEventListener('transitionend', (event) => {
+        if (event.target !== wheel || event.propertyName !== 'transform' || !spinning) return;
+        finishSpin(Number(wheel.dataset.sector));
+      });
+
+      spinButton.addEventListener('click', spin);
+
+      againButton.addEventListener('click', () => {
+        if (modal.open) modal.close();
+        window.setTimeout(spin, 160);
+      });
+
+      closeButton.addEventListener('click', () => modal.close());
+      acceptButton.addEventListener('click', () => modal.close());
+
+      modal.addEventListener('click', (event) => {
+        if (event.target !== modal) return;
+        const rect = modal.getBoundingClientRect();
+        const inside = event.clientX >= rect.left && event.clientX <= rect.right
+          && event.clientY >= rect.top && event.clientY <= rect.bottom;
+        if (!inside) modal.close();
+      });
+
+      new MutationObserver(revealPending).observe(panel, {
+        attributes: true,
+        attributeFilter: ['class']
+      });
+    })();
+  </script>
+</body>
+</html>
